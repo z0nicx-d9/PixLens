@@ -170,3 +170,25 @@ fn show_blocks_draws_half_blocks() {
     assert_eq!(text.lines().count(), 4);
     assert_eq!(text.matches('▀').count(), 32);
 }
+
+#[test]
+fn setup_installs_the_plugin_from_this_repository() {
+    let scratch = Scratch::new("setup");
+    let out = pixlens(&["setup", "--dry-run"], &scratch.path("cache"));
+    assert!(out.status.success());
+    let line = String::from_utf8_lossy(&out.stdout);
+    assert_eq!(
+        line.trim(),
+        "claude plugin install pixlens --marketplace z0nicx-d9/pixlens --scope user"
+    );
+
+    let out = pixlens(
+        &["setup", "--dry-run", "--scope", "project"],
+        &scratch.path("cache"),
+    );
+    assert!(
+        String::from_utf8_lossy(&out.stdout)
+            .trim()
+            .ends_with("--scope project")
+    );
+}

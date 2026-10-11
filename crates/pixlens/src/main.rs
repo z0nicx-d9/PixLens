@@ -107,6 +107,35 @@ enum Command {
         #[arg(long)]
         cache_dir: Option<PathBuf>,
     },
+    /// Install the pixlens plugin into Claude Code, from this project's
+    /// marketplace, so `cargo install pixlens` is all you run by hand.
+    Setup {
+        /// Who gets the plugin: you everywhere (user), this project for
+        /// everyone (project), or this project for you (local)
+        #[arg(long, value_enum, default_value_t = Scope::User)]
+        scope: Scope,
+        /// Print the command instead of running it
+        #[arg(long)]
+        dry_run: bool,
+    },
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+enum Scope {
+    User,
+    Project,
+    Local,
+}
+
+/// Where the plugin's marketplace lives: this crate's own GitHub repository,
+/// as the `owner/repo` Claude Code reads (an https URL could be taken for a
+/// marketplace.json address).
+fn marketplace() -> &'static str {
+    let repository = env!("CARGO_PKG_REPOSITORY");
+    repository
+        .strip_prefix("https://github.com/")
+        .unwrap_or(repository)
+        .trim_end_matches(".git")
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -188,7 +217,58 @@ fn main() -> ExitCode {
             let cache_dir = cache_dir.unwrap_or_else(cache::default_dir);
             answer(open(&file, &cache_dir).map(|opened| json!({ "opened": opened })))
         }
+        Command::Setup { scope, dry_run } => setup(scope, dry_run),
     }
+}
+
+/// Runs `claude plugin install pixlens --marketplace <this repo>`, letting
+/// Claude Code ask what it asks, then says what is left to do by hand.
+fn setup(scope: Scope, dry_run: bool) -> ExitCode {
+    let scope = match scope {
+        Scope::User => "user",
+        Scope::Project => "project",
+        Scope::Local => "local",
+    };
+    let args = [
+        "plugin",
+        "install",
+        "pixlens",
+        "--marketplace",
+        marketplace(),
+        "--scope",
+        scope,
+    ];
+    if dry_run {
+        println!("claude {}", args.join(" "));
+        return ExitCode::SUCCESS;
+    }
+
+    let status = match std::process::Command::new("claude").args(args).status() {
+        Ok(status) => status,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+            eprintln!(
+                "pixlens: Claude Code is not installed (no `claude` on PATH): see https://claude.com/claude-code"
+            );
+            return ExitCode::FAILURE;
+        }
+        Err(err) => {
+            eprintln!("pixlens: cannot run claude: {err}");
+            return ExitCode::FAILURE;
+        }
+    };
+    if !status.success() {
+        eprintln!("pixlens: installing the plugin failed ({status})");
+        return ExitCode::FAILURE;
+    }
+
+    println!("\npixlens is set up. Start a new Claude Code session to use it.");
+    if cfg!(target_os = "macos") {
+        println!(
+            "For sharp pictures in Apple's Terminal, give it (or herdr) Accessibility access:\n\
+             System Settings > Privacy & Security > Accessibility."
+        );
+    }
+    ExitCode::SUCCESS
 }
 
 /// Prints the JSON answer, or `{ "error" }`, and the matching exit code.
