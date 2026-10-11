@@ -51,10 +51,24 @@ fn copy_converts_other_formats_and_reports_a_failing_tool() {
 }
 
 #[test]
-fn open_uses_preview_and_converts_svg_first() {
+fn open_uses_preview() {
     let scratch = Scratch::new("desk-open");
     scratch.tool("open", "exit 0");
     let png = scratch.png("a.png", 4, 4);
+
+    let out = run(&scratch, &["open", arg(&png)], &[]);
+    assert!(json(&out)["opened"].as_str().unwrap().ends_with("a.png"));
+    assert!(scratch.calls().contains("open -a Preview"));
+
+    let missing = run(&scratch, &["open", arg(&scratch.path("none.png"))], &[]);
+    assert!(json(&missing)["error"].is_string());
+}
+
+#[cfg(feature = "svg")]
+#[test]
+fn open_converts_svg_first() {
+    let scratch = Scratch::new("desk-open-svg");
+    scratch.tool("open", "exit 0");
     let svg = scratch.path("b.svg");
     std::fs::write(
         &svg,
@@ -62,14 +76,9 @@ fn open_uses_preview_and_converts_svg_first() {
     )
     .unwrap();
 
-    let out = run(&scratch, &["open", arg(&png)], &[]);
-    assert!(json(&out)["opened"].as_str().unwrap().ends_with("a.png"));
     let out = run(&scratch, &["open", arg(&svg)], &[]);
     assert!(json(&out)["opened"].as_str().unwrap().contains("cache"));
     assert!(scratch.calls().contains("open -a Preview"));
-
-    let missing = run(&scratch, &["open", arg(&scratch.path("none.png"))], &[]);
-    assert!(json(&missing)["error"].is_string());
 }
 
 #[test]

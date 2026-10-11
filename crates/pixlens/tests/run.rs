@@ -334,14 +334,20 @@ fn commands_report_a_cache_they_cannot_write() {
         cache.to_str().unwrap(),
     );
 
-    for args in [
+    let mut commands = vec![
         vec!["render", png, "--png", "--cache-dir", cache],
-        vec!["render", svg, "--overlay", "--cache-dir", cache],
         vec!["render", png, "--overlay", "--cache-dir", cache],
         vec!["copy", jpeg, "--cache-dir", cache],
-        vec!["open", svg, "--cache-dir", cache],
-        vec!["menu", svg, "--cache-dir", cache],
-    ] {
+    ];
+    // An SVG goes through a PNG in the cache, when pixlens can read SVG.
+    if cfg!(feature = "svg") {
+        commands.extend([
+            vec!["render", svg, "--overlay", "--cache-dir", cache],
+            vec!["open", svg, "--cache-dir", cache],
+            vec!["menu", svg, "--cache-dir", cache],
+        ]);
+    }
+    for args in commands {
         let out = run(&args, &[]);
         assert_eq!(out.code, 1, "{args:?}");
         assert!(
