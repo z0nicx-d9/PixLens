@@ -1,0 +1,4 @@
+/target
+.DS_Store
+plugin/.claude-plugin/types/
+plugin/node_modules/
