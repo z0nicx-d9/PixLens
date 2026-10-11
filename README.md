@@ -1,6 +1,6 @@
 <a id="top"></a>
 
-# Pixlens 
+# Pixlens
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Claude Code 2.1.295+](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
 [![Rust 1.88+](https://img.shields.io/badge/Rust-1.88%2B-000000.svg?logo=rust&logoColor=white)](crates/pixlens)
@@ -30,49 +30,56 @@ image work and a Claude Code plugin draws the result.
   <br><sub>Hover to light a picture up, click its name for the menu.</sub>
 </p>
 
-<p align="right"><a href="#top">back to top ↑</a></p>
+<a id="prerequisites"></a>
 
-
-## Prerequisites
+## 📋 Prerequisites
 
 - **Claude Code 2.1.295 or newer**, the first version with the function-hook plugin API. Check with `claude --version`.
-- **Rust 1.88 or newer** to build the CLI with `cargo install`. Not needed if you download a prebuilt binary.
+- **Rust 1.88 or newer** to build the CLI with `cargo install`. Not needed with a prebuilt binary from [Releases](https://github.com/z0nicx-d9/pixlens/releases).
 - **A terminal with color.** For sharp pictures:
   - Ghostty or kitty work as they are.
   - On macOS, Apple's Terminal (or herdr inside it) needs **Accessibility** access for that terminal, used by Pixlens Overlay.
 - **Optional:** Python 3 with matplotlib, only to run `examples/chart.py`.
 
-## Features
+<a id="features"></a>
+
+## ✨ Features
 
 - **Paste thumbnails.** Paste an image and a thumbnail shows above the prompt, labelled `#1`, `#2`… instead of a bare `[Image #1]` tag. They go away when you send.
 - **Automatic previews.** When Claude reads an image, writes one, or runs a script that makes one (`python plot.py` → `chart.png`), the picture appears right under that step.
-- **Sharp, even in Apple's Terminal.** Real pixels in Ghostty and kitty; in Terminal.app and herdr the bundled [Pixlens Overlay](#pixlens-overlay-sharp-pictures-in-apples-terminal) lays the real picture over the preview.
+- **Sharp, even in Apple's Terminal.** Real pixels in Ghostty and kitty; in Terminal.app and herdr the bundled [Pixlens Overlay](#pixlens-overlay) lays the real picture over the preview.
 - **Click to open.** Hover a picture or its name and it lights up. Click the picture to open it in Preview; click the name for a menu: Open in Preview, Quick Look, Copy Image, Show in Finder.
 - **`/pixlens` command and `image_preview` tool.** Look at any image yourself, open or copy one, or let Claude show you a picture without reading it into its context.
 - **Rust core.** Decoding, EXIF rotation, SVG rendering and resizing happen in a small, fast CLI. It also works on its own: `pixlens show photo.jpg` in any terminal.
 
 Formats: PNG, JPEG, GIF (first frame), WebP, BMP, TIFF, ICO, QOI and SVG.
 
-## Install
+<a id="install"></a>
 
-pixlens has two parts: the **`pixlens` CLI**, which decodes and resizes images, and the **Claude Code plugin**, which draws them. You need Claude Code 2.1.295 or newer (function hooks).
+## 📦 Install
 
 ```sh
-cargo install pixlens   # 1. the CLI, from crates.io
-pixlens setup           # 2. the plugin, into Claude Code
+cargo install pixlens   # the CLI, from crates.io
+pixlens setup           # the plugin, into Claude Code
 ```
 
-`pixlens setup` runs Claude Code's own plugin install for you (`--scope project` installs it for one project instead of your user). To do that step by hand, type this at the Claude Code prompt instead:
+On macOS with Apple's Terminal, also give your terminal (Terminal, or herdr) **Accessibility** access in System Settings → Privacy & Security, for [sharp pictures](#pixlens-overlay).
+
+<details>
+<summary>Install the plugin by hand</summary>
+
+`pixlens setup` runs Claude Code's own plugin install (`--scope project` installs it for one project). To do it yourself, type this at the Claude Code prompt:
 
 ```
 /plugin install pixlens --marketplace z0nicx-d9/pixlens
 ```
-
-**3. On macOS with Apple's Terminal** (optional, for sharp pictures): give your terminal Accessibility access in **System Settings → Privacy & Security → Accessibility**. Add **Terminal**, or **herdr** if you run Claude Code inside herdr. See [Pixlens Overlay](#pixlens-overlay-sharp-pictures-in-apples-terminal).
+</details>
 
 <p align="right"><a href="#top">back to top ↑</a></p>
 
-## Usage
+<a id="usage"></a>
+
+## 🚀 Usage
 
 Work as usual. Pictures show up on their own:
 
@@ -83,32 +90,27 @@ Work as usual. Pictures show up on their own:
 | Claude runs a script that saves an image | The new file under the `Bash` step (old files are left out, so `ls *.png` doesn't flood your screen) |
 | Ask *"show me the chart"* | Claude calls `image_preview` and you see it |
 
-Commands at the prompt:
+At the prompt:
 
 ```
-/pixlens examples/kaiju.png examples/green-hill.png    # look at files yourself
-/pixlens open #1                                         # open pasted image #1 in Preview
-/pixlens copy chart.svg                                  # copy as a PNG, ready for ctrl+v
+/pixlens examples/kaiju.png examples/green-hill.png   # look at images yourself
+/pixlens open #1                                        # open pasted image #1 in Preview
+/pixlens copy #1                                        # copy it as a PNG, ready for ctrl+v
 ```
 
-Try the example images:
+In any terminal, without Claude Code:
 
 ```sh
-cd pixlens && claude --plugin-dir ./plugin "/pixlens examples/kaiju.png examples/green-hill.png"
-```
-
-Outside Claude Code, the CLI is a viewer of its own:
-
-```sh
-pixlens show examples/kaiju.png                     # draw it in this terminal
-pixlens show --protocol blocks --columns 60 photo.jpg
-pixlens copy chart.svg                              # to the clipboard as a PNG
-pixlens open photo.jpg                              # Preview on macOS, the default viewer elsewhere
+pixlens show examples/kaiju.png     # draw it here
+pixlens copy examples/chart.png     # to the clipboard as a PNG
+pixlens open examples/chart.png     # in Preview, or the default viewer elsewhere
 ```
 
 <p align="right"><a href="#top">back to top ↑</a></p>
 
-## Terminal support
+<a id="terminal-support"></a>
+
+## 🖥️ Terminal support
 
 | Terminal | Inside Claude Code | `pixlens show` |
 | --- | --- | --- |
@@ -133,7 +135,9 @@ fi
 pixlens reads the same variable.
 </details>
 
-### Pixlens Overlay: sharp pictures in Apple's Terminal
+<a id="pixlens-overlay"></a>
+
+### 🔍 Pixlens Overlay: sharp pictures in Apple's Terminal
 
 Apple's Terminal can't draw pixels, and a plugin can only draw characters there. So the plugin ships a small macOS helper, `plugin/overlay/Pixlens Overlay.app`, that lays the real picture over each preview. Nothing to install: the plugin starts it from its own folder the first time it draws a picture.
 
@@ -144,7 +148,9 @@ Apple's Terminal can't draw pixels, and a plugin can only draw characters there.
 
 <p align="right"><a href="#top">back to top ↑</a></p>
 
-## Settings
+<a id="settings"></a>
+
+## ⚙️ Settings
 
 Change these in `/config`, under pixlens:
 
@@ -162,7 +168,9 @@ Change these in `/config`, under pixlens:
 
 <p align="right"><a href="#top">back to top ↑</a></p>
 
-## How it works
+<a id="how-it-works"></a>
+
+## 🛠️ How it works
 
 ```mermaid
 flowchart LR
@@ -183,6 +191,9 @@ Resized PNGs live in the platform cache folder (`PIXLENS_CACHE_DIR` overrides it
 
 <p align="right"><a href="#top">back to top ↑</a></p>
 
+<a id="built-with"></a>
+
+## 🧱 Built with
 
 Main Rust crates:
 
@@ -196,7 +207,9 @@ Main Rust crates:
 
 <p align="right"><a href="#top">back to top ↑</a></p>
 
-## FAQ
+<a id="faq"></a>
+
+## ❓ FAQ
 
 <details>
 <summary><b>The pictures are blurry blocks in Terminal.app.</b></summary>
@@ -224,7 +237,9 @@ No. Previews are for you. `image_preview` tells Claude only the file names and s
 
 <p align="right"><a href="#top">back to top ↑</a></p>
 
-## Contributing
+<a id="contributing"></a>
+
+## 🤝 Contributing
 
 Issues and pull requests are welcome. To work on it:
 
@@ -236,11 +251,14 @@ plugin/overlay/build.sh         # rebuild Pixlens Overlay after changing its Swi
 claude --plugin-dir ./plugin    # a session with your working copy loaded
 ```
 
-`claude --plugin-dir` reloads the plugin whenever you save a file in it.
+`claude --plugin-dir` reloads the plugin whenever you save a file in it. Try it on the examples:
+`claude --plugin-dir ./plugin "/pixlens examples/kaiju.png examples/green-hill.png"`.
 
 **Limits.** The function-hook API is early access, so a future Claude Code release may need changes here; CI pins the version last checked. Previews show in the terminal only, not in the desktop app or the VS Code extension. tmux doesn't pass graphics through.
 
-## License
+<a id="license"></a>
+
+## 📄 License
 
 Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option.
 
