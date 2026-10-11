@@ -144,7 +144,7 @@ fn setup_installs_the_plugin_from_this_repository() {
     let line = String::from_utf8_lossy(&out.stdout);
     assert_eq!(
         line.trim(),
-        "claude plugin install pixlens --marketplace z0nicx-d9/pixlens --scope user"
+        "claude plugin install pixlens --marketplace z0nicx-d9/PixLens --scope user"
     );
 
     let out = pixlens(

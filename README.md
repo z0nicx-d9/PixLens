@@ -1,6 +1,6 @@
 <a id="top"></a>
 
-# Pixlens [![DEVORBIT](docs/badge.svg)](https://github.com/z0nicx-d9)
+# PixLens [![DEVORBIT](docs/badge.svg)](https://github.com/z0nicx-d9)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Claude Code 2.1.295+](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
 [![Rust 1.88+](https://img.shields.io/badge/Rust-1.88%2B-000000.svg?logo=rust&logoColor=white)](crates/pixlens)
@@ -36,7 +36,7 @@ image work and a Claude Code plugin draws the result.
 ## 📋 Prerequisites
 
 - **Claude Code 2.1.295 or newer**, the first version with the function-hook plugin API. Check with `claude --version`.
-- **Rust 1.88 or newer** to build the CLI with `cargo install`. Not needed with a prebuilt binary from [Releases](https://github.com/z0nicx-d9/pixlens/releases).
+- **Rust 1.88 or newer** to build the CLI with `cargo install`. Not needed with a prebuilt binary from [Releases](https://github.com/z0nicx-d9/PixLens/releases).
 - **A terminal with color.** For sharp pictures:
   - Ghostty or kitty work as they are.
   - On macOS, Apple's Terminal (or herdr inside it) needs **Accessibility** access for that terminal, used by Pixlens Overlay.
@@ -76,7 +76,7 @@ $ pixlens setup           # the plugin, into Claude Code
 `pixlens setup` runs Claude Code's own plugin install (`--scope project` installs it for one project). To do it yourself, type this at the Claude Code prompt:
 
 ```
-/plugin install pixlens --marketplace z0nicx-d9/pixlens
+/plugin install pixlens --marketplace z0nicx-d9/PixLens
 ```
 </details>
 

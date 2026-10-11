@@ -1,7 +1,7 @@
 # Security policy
 
 Please report a vulnerability privately through GitHub's
-[security advisories](https://github.com/z0nicx-d9/pixlens/security/advisories/new),
+[security advisories](https://github.com/z0nicx-d9/PixLens/security/advisories/new),
 not in a public issue.
 
 Pixlens Overlay asks for Accessibility access for your terminal. That access

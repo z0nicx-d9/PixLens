@@ -17,4 +17,4 @@ All notable changes to this project are documented here. The format follows
 - `pixlens setup` installs the plugin into Claude Code.
 - Formats: PNG, JPEG, GIF, WebP, BMP, TIFF, ICO, QOI and SVG.
 
-[Unreleased]: https://github.com/z0nicx-d9/pixlens/commits/main
+[Unreleased]: https://github.com/z0nicx-d9/PixLens/commits/main

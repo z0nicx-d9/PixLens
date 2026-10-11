@@ -225,7 +225,7 @@ fn setup_prints_or_runs_the_plugin_install() {
     let dry = run(&["setup", "--dry-run", "--scope", "local"], &[]);
     assert_eq!(
         dry.out.trim(),
-        "claude plugin install pixlens --marketplace z0nicx-d9/pixlens --scope local"
+        "claude plugin install pixlens --marketplace z0nicx-d9/PixLens --scope local"
     );
 
     let claude = scratch.tool("claude", "exit 0");
@@ -236,7 +236,7 @@ fn setup_prints_or_runs_the_plugin_install() {
     assert!(
         scratch
             .calls()
-            .contains("claude plugin install pixlens --marketplace z0nicx-d9/pixlens --scope user")
+            .contains("claude plugin install pixlens --marketplace z0nicx-d9/PixLens --scope user")
     );
 
     let linux = run_on(
