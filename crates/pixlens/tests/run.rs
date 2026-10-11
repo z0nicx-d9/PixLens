@@ -195,11 +195,11 @@ fn render_finds_the_cache_from_the_environment() {
     let home = scratch.path("home");
     let env = [("HOME", home.to_str().unwrap())];
     let answer = run(&["render", file.to_str().unwrap(), "--png"], &env).json();
+    // Compared as paths, so Windows' `\` and `/` separators both match.
+    let png = std::path::Path::new(answer["png"].as_str().unwrap());
     assert!(
-        answer["png"]
-            .as_str()
-            .unwrap()
-            .starts_with(home.join("Library/Caches/pixlens").to_str().unwrap())
+        png.starts_with(home.join("Library/Caches/pixlens")),
+        "{png:?}"
     );
 }
 
