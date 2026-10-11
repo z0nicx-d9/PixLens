@@ -1,54 +1,19 @@
-use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+//! The binary end to end: arguments in, JSON or drawing out.
+
+mod common;
+
+use std::path::PathBuf;
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
-use image::{Rgba, RgbaImage};
-use serde_json::Value;
+
+use common::{Scratch, gradient, json, pixlens};
 
 #[cfg(feature = "svg")]
 const SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">
   <rect width="200" height="100" fill="#3366ff"/>
   <circle cx="100" cy="50" r="40" fill="#ffcc00"/>
 </svg>"##;
-
-struct Scratch(PathBuf);
-
-impl Scratch {
-    fn new(name: &str) -> Self {
-        let dir = std::env::temp_dir().join(format!("pixlens-cli-{name}-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        Scratch(dir)
-    }
-
-    fn path(&self, name: &str) -> PathBuf {
-        self.0.join(name)
-    }
-}
-
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
-
-fn gradient(width: u32, height: u32) -> RgbaImage {
-    RgbaImage::from_fn(width, height, |x, y| {
-        Rgba([(x * 255 / width) as u8, (y * 255 / height) as u8, 128, 255])
-    })
-}
-
-fn pixlens(args: &[&str], cache: &Path) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_pixlens"))
-        .args(args)
-        .env("PIXLENS_CACHE_DIR", cache)
-        .output()
-        .unwrap()
-}
-
-fn json(output: &Output) -> Value {
-    serde_json::from_slice(&output.stdout).unwrap()
-}
 
 #[test]
 fn render_jpeg_answers_box_png_and_cells() {
