@@ -7,7 +7,7 @@
 **See your images inside [Claude Code](https://claude.com/claude-code).**<br>
 Pasted pictures, charts your scripts draw, files Claude reads: right in the terminal, sharp.
 
-[![CI](https://github.com/OWNER/pixlens/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/pixlens/actions/workflows/ci.yml)
+[![CI](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml/badge.svg)](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Rust](https://img.shields.io/badge/rust-2024%20edition-orange.svg)](crates/pixlens)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
@@ -51,15 +51,15 @@ pixlens has two parts: the **`pixlens` CLI**, which decodes and resizes images, 
 **1. The CLI**
 
 ```sh
-cargo install --git https://github.com/OWNER/pixlens pixlens
+cargo install --git https://github.com/z0nicx-d9/pixlens pixlens
 ```
 
-Or download a prebuilt binary from [Releases](https://github.com/OWNER/pixlens/releases) and put it on your `PATH`.
+Or download a prebuilt binary from [Releases](https://github.com/z0nicx-d9/pixlens/releases) and put it on your `PATH`.
 
 **2. The plugin**, typed at the Claude Code prompt:
 
 ```
-/plugin install pixlens --marketplace OWNER/pixlens
+/plugin install pixlens --marketplace z0nicx-d9/pixlens
 ```
 
 Answer `y` to add the marketplace, then press Enter to install it for your user.

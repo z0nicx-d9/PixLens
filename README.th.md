@@ -7,7 +7,7 @@
 **ดูรูปได้ตรงใน [Claude Code](https://claude.com/claude-code)**<br>
 รูปที่วาง กราฟที่สคริปต์วาด ไฟล์ที่ Claude เปิดอ่าน แสดงใน terminal ได้เลย และคมด้วย
 
-[![CI](https://github.com/OWNER/pixlens/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/pixlens/actions/workflows/ci.yml)
+[![CI](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml/badge.svg)](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Rust](https://img.shields.io/badge/rust-2024%20edition-orange.svg)](crates/pixlens)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
@@ -55,15 +55,15 @@ pixlens มีสองส่วน คือ **CLI `pixlens`** ที่อ่�
 **1. CLI**
 
 ```sh
-cargo install --git https://github.com/OWNER/pixlens pixlens
+cargo install --git https://github.com/z0nicx-d9/pixlens pixlens
 ```
 
-หรือดาวน์โหลด binary ที่ build แล้วจาก [Releases](https://github.com/OWNER/pixlens/releases) แล้ววางไว้ใน `PATH`
+หรือดาวน์โหลด binary ที่ build แล้วจาก [Releases](https://github.com/z0nicx-d9/pixlens/releases) แล้ววางไว้ใน `PATH`
 
 **2. plugin** พิมพ์ในช่อง prompt ของ Claude Code:
 
 ```
-/plugin install pixlens --marketplace OWNER/pixlens
+/plugin install pixlens --marketplace z0nicx-d9/pixlens
 ```
 
 ตอบ `y` เพื่อเพิ่ม marketplace แล้วกด Enter เพื่อติดตั้งให้ผู้ใช้ของคุณ
