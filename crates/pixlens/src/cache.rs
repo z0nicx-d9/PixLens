@@ -12,6 +12,7 @@ use image::RgbaImage;
 use image::imageops::{self, FilterType};
 
 use crate::fit::CellBox;
+use crate::platform::{Env, Platform, ProcessEnv};
 
 /// Pixels a cell is given in the PNG: enough for a HiDPI screen.
 const CELL_WIDTH_PX: u32 = 20;
@@ -19,21 +20,25 @@ const CELL_HEIGHT_PX: u32 = 40;
 
 const KEEP_FOR: Duration = Duration::from_secs(14 * 24 * 60 * 60);
 
-/// The folder resized images go in: `PIXLENS_CACHE_DIR` when set, else the
-/// platform's cache folder.
+/// The folder resized images go in, for this machine.
 pub fn default_dir() -> PathBuf {
-    if let Some(dir) = std::env::var_os("PIXLENS_CACHE_DIR") {
+    default_dir_for(Platform::CURRENT, &ProcessEnv)
+}
+
+/// The folder resized images go in: `PIXLENS_CACHE_DIR` when set, else
+/// `platform`'s cache folder, else the temp folder.
+pub fn default_dir_for(platform: Platform, env: &dyn Env) -> PathBuf {
+    if let Some(dir) = env.var_os("PIXLENS_CACHE_DIR") {
         return PathBuf::from(dir);
     }
-    let home = std::env::var_os("HOME").map(PathBuf::from);
-    let base = if cfg!(target_os = "macos") {
-        home.map(|h| h.join("Library/Caches"))
-    } else if cfg!(windows) {
-        std::env::var_os("LOCALAPPDATA").map(PathBuf::from)
-    } else {
-        std::env::var_os("XDG_CACHE_HOME")
+    let home = env.var_os("HOME").map(PathBuf::from);
+    let base = match platform {
+        Platform::MacOs => home.map(|h| h.join("Library/Caches")),
+        Platform::Windows => env.var_os("LOCALAPPDATA").map(PathBuf::from),
+        Platform::Linux => env
+            .var_os("XDG_CACHE_HOME")
             .map(PathBuf::from)
-            .or(home.map(|h| h.join(".cache")))
+            .or(home.map(|h| h.join(".cache"))),
     };
     base.unwrap_or_else(std::env::temp_dir).join("pixlens")
 }
@@ -136,6 +141,118 @@ mod tests {
     use super::*;
 
     #[test]
+    fn default_dir_follows_each_platform() {
+        let set = [("PIXLENS_CACHE_DIR", "/c")];
+        assert_eq!(default_dir_for(Platform::MacOs, &set), PathBuf::from("/c"));
+        let home = [("HOME", "/h")];
+        assert_eq!(
+            default_dir_for(Platform::MacOs, &home),
+            PathBuf::from("/h/Library/Caches/pixlens")
+        );
+        let local = [("LOCALAPPDATA", "C:/L")];
+        assert_eq!(
+            default_dir_for(Platform::Windows, &local),
+            PathBuf::from("C:/L/pixlens")
+        );
+        let xdg = [("XDG_CACHE_HOME", "/x"), ("HOME", "/h")];
+        assert_eq!(
+            default_dir_for(Platform::Linux, &xdg),
+            PathBuf::from("/x/pixlens")
+        );
+        assert_eq!(
+            default_dir_for(Platform::Linux, &home),
+            PathBuf::from("/h/.cache/pixlens")
+        );
+        assert_eq!(
+            default_dir_for(Platform::Linux, &[]),
+            std::env::temp_dir().join("pixlens")
+        );
+        let _ = default_dir();
+    }
+
+    #[test]
+    fn prune_drops_files_older_than_two_weeks() {
+        let dir = std::env::temp_dir().join(format!("pixlens-prune-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let (old, new) = (dir.join("old.png"), dir.join("new.png"));
+        fs::write(&old, "").unwrap();
+        fs::write(&new, "").unwrap();
+        let weeks_ago = SystemTime::now() - Duration::from_secs(15 * 24 * 60 * 60);
+        fs::File::options()
+            .write(true)
+            .open(&old)
+            .unwrap()
+            .set_modified(weeks_ago)
+            .unwrap();
+        prune(&dir);
+        assert!(!old.exists() && new.exists());
+        prune(&dir.join("missing"));
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn writing_into_a_missing_folder_fails() {
+        let image = RgbaImage::from_pixel(1, 1, image::Rgba([0, 0, 0, 255]));
+        assert!(write_png(&image, Path::new("/nonexistent/dir/a.png")).is_err());
+        let blocked = std::env::temp_dir().join(format!("pixlens-file-{}", std::process::id()));
+        fs::write(&blocked, "").unwrap();
+        let cell_box = CellBox {
+            columns: 1,
+            rows: 1,
+        };
+        assert!(png_for(&blocked, &image, cell_box, &blocked.join("cache")).is_err());
+        assert!(full_png(&blocked, &image, "jpeg", &blocked.join("cache")).is_err());
+        fs::remove_file(blocked).unwrap();
+    }
+
+    #[test]
+    fn a_missing_source_is_named_as_given() {
+        let missing = Path::new("/nonexistent/a.png");
+        let image = RgbaImage::from_pixel(1, 1, image::Rgba([0, 0, 0, 255]));
+        assert_eq!(
+            full_png(missing, &image, "png", Path::new("/tmp")).unwrap(),
+            missing
+        );
+        let cell_box = CellBox {
+            columns: 1,
+            rows: 1,
+        };
+        assert_eq!(key(missing, cell_box), key(missing, cell_box));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_read_only_cache_is_an_error() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("pixlens-locked-{}", std::process::id()));
+        let cache = dir.join("cache");
+        fs::create_dir_all(&cache).unwrap();
+        let source = dir.join("a.jpg");
+        fs::write(&source, "").unwrap();
+        fs::set_permissions(&cache, fs::Permissions::from_mode(0o555)).unwrap();
+        let image = RgbaImage::from_pixel(4, 4, image::Rgba([0, 0, 0, 255]));
+        let cell_box = CellBox {
+            columns: 1,
+            rows: 1,
+        };
+        assert!(png_for(&source, &image, cell_box, &cache).is_err());
+        assert!(full_png(&source, &image, "jpeg", &cache).is_err());
+        fs::set_permissions(&cache, fs::Permissions::from_mode(0o755)).unwrap();
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_png_cannot_replace_a_folder() {
+        let dir = std::env::temp_dir().join(format!("pixlens-rename-{}", std::process::id()));
+        let target = dir.join("taken.png");
+        fs::create_dir_all(target.join("inside")).unwrap();
+        let image = RgbaImage::from_pixel(1, 1, image::Rgba([0, 0, 0, 255]));
+        let error = write_png(&image, &target).unwrap_err();
+        assert!(format!("{error:#}").contains("cannot write"));
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
     fn png_shrinks_to_the_box_and_keeps_aspect() {
         let cell_box = CellBox {
             columns: 60,
@@ -197,6 +314,10 @@ mod tests {
             fs::canonicalize(&png).unwrap()
         );
         let converted = full_png(&jpeg, &image, "jpeg", &dir.join("cache")).unwrap();
+        assert_eq!(
+            full_png(&jpeg, &image, "jpeg", &dir.join("cache")).unwrap(),
+            converted
+        );
         assert!(converted.starts_with(dir.join("cache")));
         assert_eq!(image::image_dimensions(&converted).unwrap(), (5, 3));
 

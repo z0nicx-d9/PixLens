@@ -11,6 +11,7 @@ use image::imageops::{self, FilterType};
 use image::{Rgba, RgbaImage};
 
 use crate::fit::CellBox;
+use crate::platform::{Env, ProcessEnv};
 
 const UPPER_HALF: u32 = 0x2580;
 const LOWER_HALF: u32 = 0x2584;
@@ -102,7 +103,7 @@ fn best_split(pixels: [Option<u32>; 4]) -> Cell {
         15 => {}
         // The terminal's background shows through: draw the rest in its mean color.
         _ => {
-            let fg = mean(pixels.iter().flatten().copied());
+            let fg = mean(&pixels.iter().flatten().copied().collect::<Vec<_>>());
             return Cell {
                 glyph: QUADRANTS[lit],
                 fg,
@@ -112,7 +113,7 @@ fn best_split(pixels: [Option<u32>; 4]) -> Cell {
     }
 
     let colors = pixels.map(|pixel| pixel.unwrap_or_default());
-    let one = mean(colors.iter().copied());
+    let one = mean(&colors);
     let flat_error: u32 = colors.iter().map(|&c| distance(c, one)).sum();
     let mut best = (
         flat_error,
@@ -126,8 +127,18 @@ fn best_split(pixels: [Option<u32>; 4]) -> Cell {
     // Masks 1 to 7 are each two-color split once (8 to 14 repeat them).
     for (mask, &glyph) in QUADRANTS.iter().enumerate().take(8).skip(1) {
         let is_lit = |i: usize| mask >> i & 1 == 1;
-        let fg = mean((0..4).filter(|&i| is_lit(i)).map(|i| colors[i]));
-        let bg = mean((0..4).filter(|&i| !is_lit(i)).map(|i| colors[i]));
+        let fg = mean(
+            &(0..4)
+                .filter(|&i| is_lit(i))
+                .map(|i| colors[i])
+                .collect::<Vec<_>>(),
+        );
+        let bg = mean(
+            &(0..4)
+                .filter(|&i| !is_lit(i))
+                .map(|i| colors[i])
+                .collect::<Vec<_>>(),
+        );
         let error: u32 = (0..4)
             .map(|i| distance(colors[i], if is_lit(i) { fg } else { bg }))
             .sum();
@@ -148,9 +159,9 @@ fn best_split(pixels: [Option<u32>; 4]) -> Cell {
 }
 
 /// The mean of `0x00RRGGBB` colors, per channel; 0 for none.
-fn mean(colors: impl Iterator<Item = u32>) -> u32 {
+fn mean(colors: &[u32]) -> u32 {
     let (mut sum, mut n) = ([0u32; 3], 0u32);
-    for color in colors {
+    for &color in colors {
         for (channel, total) in sum.iter_mut().enumerate() {
             *total += color >> (16 - 8 * channel) & 0xff;
         }
@@ -240,11 +251,16 @@ pub enum Palette {
 }
 
 impl Palette {
+    /// The palette for the process environment.
+    pub fn detect() -> Self {
+        Self::detect_in(&ProcessEnv)
+    }
+
     /// Truecolor, unless this is Apple's Terminal and `COLORTERM` does not
     /// say otherwise; `--colors` overrides it.
-    pub fn detect() -> Self {
-        let colorterm = std::env::var("COLORTERM").unwrap_or_default();
-        let program = std::env::var("TERM_PROGRAM").unwrap_or_default();
+    pub fn detect_in(env: &dyn Env) -> Self {
+        let colorterm = env.var("COLORTERM");
+        let program = env.var("TERM_PROGRAM");
         if colorterm.contains("truecolor")
             || colorterm.contains("24bit")
             || program != "Apple_Terminal"
@@ -479,5 +495,88 @@ mod tests {
         assert_eq!(to_256(255, 0, 0), 196);
         assert_eq!(to_256(0, 0, 0), 16);
         assert_eq!(to_256(128, 128, 128), 244);
+        assert_eq!(to_256(80, 80, 80), 239);
+        assert_eq!(to_256(245, 245, 245), 255);
+    }
+
+    #[test]
+    fn ansi_256_line_and_default_colors() {
+        let cell = Cell {
+            glyph: UPPER_HALF,
+            fg: 0xff0000,
+            bg: DEFAULT_COLOR,
+        };
+        assert_eq!(
+            ansi(&[cell], 1, Palette::Ansi256),
+            "\x1b[0;38;5;196m▀\x1b[0m\n"
+        );
+    }
+
+    #[test]
+    fn palette_is_256_only_in_apples_terminal_without_truecolor() {
+        let apple = [("TERM_PROGRAM", "Apple_Terminal")];
+        assert_eq!(Palette::detect_in(&apple), Palette::Ansi256);
+        let apple_true = [
+            ("TERM_PROGRAM", "Apple_Terminal"),
+            ("COLORTERM", "truecolor"),
+        ];
+        assert_eq!(Palette::detect_in(&apple_true), Palette::TrueColor);
+        let apple_24 = [("TERM_PROGRAM", "Apple_Terminal"), ("COLORTERM", "24bit")];
+        assert_eq!(Palette::detect_in(&apple_24), Palette::TrueColor);
+        assert_eq!(
+            Palette::detect_in(&[("TERM_PROGRAM", "ghostty")]),
+            Palette::TrueColor
+        );
+        let _ = Palette::detect();
+    }
+
+    #[test]
+    fn half_blocks_cover_every_mix_of_transparent_pixels() {
+        let pixels = [[255, 0, 0, 255], [0, 0, 0, 0]];
+        let mut found = Vec::new();
+        for upper in pixels {
+            for lower in pixels {
+                let image = RgbaImage::from_raw(1, 2, [upper, lower].concat()).unwrap();
+                found.push(
+                    cells_with(
+                        &image,
+                        CellBox {
+                            columns: 1,
+                            rows: 1,
+                        },
+                        Glyphs::Half,
+                    )[0]
+                    .glyph,
+                );
+            }
+        }
+        assert_eq!(found, [UPPER_HALF, UPPER_HALF, LOWER_HALF, SPACE]);
+    }
+
+    #[test]
+    fn a_fully_transparent_quarter_set_is_a_blank_cell() {
+        let blank = best_split([None; 4]);
+        assert_eq!(
+            (blank.glyph, blank.fg, blank.bg),
+            (SPACE, DEFAULT_COLOR, DEFAULT_COLOR)
+        );
+        assert_eq!(mean(&[]), 0);
+    }
+
+    #[test]
+    fn quad_glyphs_are_the_default() {
+        let image = RgbaImage::from_pixel(2, 2, Rgba([9, 9, 9, 255]));
+        assert_eq!(
+            cells_with(
+                &image,
+                CellBox {
+                    columns: 1,
+                    rows: 1
+                },
+                Glyphs::default()
+            )
+            .len(),
+            1
+        );
     }
 }

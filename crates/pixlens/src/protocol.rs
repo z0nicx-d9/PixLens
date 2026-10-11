@@ -10,6 +10,7 @@ use image::imageops::{self, FilterType};
 
 use crate::blocks::{self, Glyphs, Palette};
 use crate::fit::CellBox;
+use crate::platform::{Env, ProcessEnv};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub enum Protocol {
@@ -22,20 +23,25 @@ pub enum Protocol {
 }
 
 impl Protocol {
-    /// Picks the protocol from the environment. Inside tmux or screen the
-    /// graphics escapes do not pass through, so those get blocks.
+    /// Picks the protocol from the process environment.
     pub fn detect() -> Self {
-        let var = |name: &str| std::env::var(name).unwrap_or_default();
-        if !var("TMUX").is_empty() || var("TERM").starts_with("screen") {
+        Self::detect_in(&ProcessEnv)
+    }
+
+    /// Picks the protocol from `env`. Inside tmux or screen the graphics
+    /// escapes do not pass through, so those get blocks.
+    pub fn detect_in(env: &dyn Env) -> Self {
+        let term = env.var("TERM");
+        if !env.var("TMUX").is_empty() || term.starts_with("screen") {
             return Protocol::Blocks;
         }
-        let program = var("TERM_PROGRAM");
-        if !var("KITTY_WINDOW_ID").is_empty()
-            || var("TERM") == "xterm-kitty"
-            || program == "ghostty"
-        {
+        let program = env.var("TERM_PROGRAM");
+        if !env.var("KITTY_WINDOW_ID").is_empty() || term == "xterm-kitty" || program == "ghostty" {
             Protocol::Kitty
-        } else if program == "iTerm.app" || program == "WezTerm" || var("LC_TERMINAL") == "iTerm2" {
+        } else if program == "iTerm.app"
+            || program == "WezTerm"
+            || env.var("LC_TERMINAL") == "iTerm2"
+        {
             Protocol::Iterm
         } else {
             Protocol::Blocks
@@ -135,6 +141,99 @@ mod tests {
         assert_eq!(out.matches("\x1b_G").count(), 2);
         assert!(out.contains("\x1b_Gm=0;"));
         assert!(out.ends_with("\x1b\\\n"));
+    }
+
+    #[test]
+    fn detect_reads_the_terminal_from_the_environment() {
+        assert_eq!(
+            Protocol::detect_in(&[("TERM_PROGRAM", "ghostty")]),
+            Protocol::Kitty
+        );
+        assert_eq!(
+            Protocol::detect_in(&[("TERM", "xterm-kitty")]),
+            Protocol::Kitty
+        );
+        assert_eq!(
+            Protocol::detect_in(&[("KITTY_WINDOW_ID", "1")]),
+            Protocol::Kitty
+        );
+        assert_eq!(
+            Protocol::detect_in(&[("TERM_PROGRAM", "iTerm.app")]),
+            Protocol::Iterm
+        );
+        assert_eq!(
+            Protocol::detect_in(&[("TERM_PROGRAM", "WezTerm")]),
+            Protocol::Iterm
+        );
+        assert_eq!(
+            Protocol::detect_in(&[("LC_TERMINAL", "iTerm2")]),
+            Protocol::Iterm
+        );
+        assert_eq!(
+            Protocol::detect_in(&[("TERM_PROGRAM", "Apple_Terminal")]),
+            Protocol::Blocks
+        );
+        let tmux = [("TMUX", "/tmp/t"), ("TERM_PROGRAM", "ghostty")];
+        assert_eq!(Protocol::detect_in(&tmux), Protocol::Blocks);
+        assert_eq!(
+            Protocol::detect_in(&[("TERM", "screen-256color")]),
+            Protocol::Blocks
+        );
+        let _ = Protocol::detect();
+    }
+
+    #[test]
+    fn draw_speaks_each_protocol() {
+        let image = RgbaImage::from_pixel(64, 32, image::Rgba([200, 100, 50, 255]));
+        let cell_box = CellBox {
+            columns: 4,
+            rows: 2,
+        };
+        let blocks = draw(
+            &image,
+            cell_box,
+            Protocol::Blocks,
+            Palette::TrueColor,
+            Glyphs::Quad,
+        )
+        .unwrap();
+        assert_eq!(String::from_utf8(blocks).unwrap().lines().count(), 2);
+        let kitty = draw(
+            &image,
+            cell_box,
+            Protocol::Kitty,
+            Palette::TrueColor,
+            Glyphs::Quad,
+        )
+        .unwrap();
+        assert!(kitty.starts_with(b"\x1b_G"));
+        let iterm = draw(
+            &image,
+            cell_box,
+            Protocol::Iterm,
+            Palette::TrueColor,
+            Glyphs::Quad,
+        )
+        .unwrap();
+        assert!(iterm.starts_with(b"\x1b]1337;"));
+    }
+
+    #[test]
+    fn png_shrinks_big_pictures_and_keeps_small_ones() {
+        let cell_box = CellBox {
+            columns: 2,
+            rows: 1,
+        };
+        let big = RgbaImage::from_pixel(480, 96, image::Rgba([1, 2, 3, 255]));
+        let small = RgbaImage::from_pixel(10, 10, image::Rgba([1, 2, 3, 255]));
+        let size = |bytes: Vec<u8>| {
+            image::load_from_memory(&bytes)
+                .unwrap()
+                .into_rgba8()
+                .dimensions()
+        };
+        assert_eq!(size(png(&big, cell_box).unwrap()), (48, 10));
+        assert_eq!(size(png(&small, cell_box).unwrap()), (10, 10));
     }
 
     #[test]

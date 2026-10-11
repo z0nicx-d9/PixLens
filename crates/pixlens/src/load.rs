@@ -4,6 +4,7 @@ use anyhow::{Context, Result, bail};
 use image::{DynamicImage, ImageDecoder, ImageReader, RgbaImage};
 
 /// A decoded picture and the name of the format it came from.
+#[derive(Debug)]
 pub struct Loaded {
     pub image: RgbaImage,
     pub format: &'static str,
@@ -101,8 +102,7 @@ fn load_svg(path: &Path) -> Result<Loaded> {
     let width = (size.width() * scale).round().max(1.0) as u32;
     let height = (size.height() * scale).round().max(1.0) as u32;
 
-    let mut pixmap = tiny_skia::Pixmap::new(width, height)
-        .with_context(|| format!("SVG {} has no drawable size", path.display()))?;
+    let mut pixmap = tiny_skia::Pixmap::new(width, height).context("SVG has no drawable size")?;
     resvg::render(
         &tree,
         tiny_skia::Transform::from_scale(scale, scale),
@@ -131,4 +131,121 @@ fn load_svg(path: &Path) -> Result<Loaded> {
         "{}: this pixlens was built without SVG support",
         path.display()
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use image::{ImageFormat, Rgba};
+
+    use super::*;
+
+    fn scratch(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("pixlens-load-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn every_raster_format_is_named() {
+        let dir = scratch("formats");
+        let image = DynamicImage::ImageRgba8(RgbaImage::from_pixel(4, 4, Rgba([10, 20, 30, 255])));
+        for (format, name, file) in [
+            (ImageFormat::Png, "png", "a.png"),
+            (ImageFormat::Jpeg, "jpeg", "a.jpg"),
+            (ImageFormat::Gif, "gif", "a.gif"),
+            (ImageFormat::WebP, "webp", "a.webp"),
+            (ImageFormat::Bmp, "bmp", "a.bmp"),
+            (ImageFormat::Tiff, "tiff", "a.tif"),
+            (ImageFormat::Ico, "ico", "a.ico"),
+            (ImageFormat::Qoi, "qoi", "a.qoi"),
+        ] {
+            let path = dir.join(file);
+            let pixels = if format == ImageFormat::Jpeg {
+                DynamicImage::ImageRgb8(image.to_rgb8())
+            } else {
+                image.clone()
+            };
+            pixels.save_with_format(&path, format).unwrap();
+            let loaded = load(&path).unwrap();
+            assert_eq!(
+                (loaded.format, loaded.image.dimensions()),
+                (name, (4, 4)),
+                "{file}"
+            );
+        }
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_format_pixlens_was_not_built_for_is_named_but_not_decoded() {
+        let dir = scratch("pnm");
+        let path = dir.join("a.ppm");
+        std::fs::write(&path, b"P6\n1 1\n255\n\x00\x00\x00").unwrap();
+        let error = load(&path).err().unwrap();
+        assert!(format!("{error:#}").contains("cannot decode"));
+        assert_eq!(format_name(ImageFormat::Pnm), "image");
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn unreadable_and_broken_files_say_what_went_wrong() {
+        let dir = scratch("broken");
+        // A folder opens on Unix, but can't be read.
+        #[cfg(unix)]
+        assert!(format!("{:#}", load(&dir).err().unwrap()).contains("cannot read"));
+        // A PNG header with nothing after it.
+        let cut = dir.join("cut.png");
+        let mut bytes = Vec::new();
+        DynamicImage::ImageRgba8(RgbaImage::new(8, 8))
+            .write_to(&mut std::io::Cursor::new(&mut bytes), ImageFormat::Png)
+            .unwrap();
+        std::fs::write(&cut, &bytes[..40]).unwrap();
+        assert!(format!("{:#}", load(&cut).err().unwrap()).contains("cannot decode"));
+        // Whole chunks, but the pixel data scrambled.
+        let scrambled = dir.join("scrambled.png");
+        let end = bytes.len() - 16;
+        for byte in &mut bytes[end - 8..end] {
+            *byte ^= 0xff;
+        }
+        std::fs::write(&scrambled, &bytes).unwrap();
+        assert!(format!("{:#}", load(&scrambled).err().unwrap()).contains("cannot decode"));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn text_is_not_an_image() {
+        let dir = scratch("text");
+        let path = dir.join("notes.txt");
+        std::fs::write(&path, "hello").unwrap();
+        assert!(format!("{:#}", load(&path).err().unwrap()).contains("not an image"));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[cfg(feature = "svg")]
+    #[test]
+    fn svg_is_drawn_at_a_useful_size_with_fonts_only_for_text() {
+        let dir = scratch("svg");
+        let small = dir.join("small.SVG");
+        std::fs::write(&small, r#"<svg xmlns="http://www.w3.org/2000/svg" width="100" height="50"><text y="20">Hi</text></svg>"#).unwrap();
+        let loaded = load(&small).unwrap();
+        assert_eq!(
+            (loaded.format, loaded.image.dimensions()),
+            ("svg", (1024, 512))
+        );
+
+        let big = dir.join("big.svg");
+        std::fs::write(
+            &big,
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="4096" height="1024"/>"#,
+        )
+        .unwrap();
+        assert_eq!(load(&big).unwrap().image.dimensions(), (2048, 512));
+
+        let broken = dir.join("broken.svgz");
+        std::fs::write(&broken, [0x1f, 0x8b, 0, 0]).unwrap();
+        assert!(format!("{:#}", load(&broken).err().unwrap()).contains("cannot parse SVG"));
+
+        assert!(load(&dir.join("missing.svg")).is_err());
+        std::fs::remove_dir_all(dir).unwrap();
+    }
 }

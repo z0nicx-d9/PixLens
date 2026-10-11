@@ -14,12 +14,16 @@ use anyhow::{Context, Result, bail};
 use serde_json::json;
 
 use crate::fit::CellBox;
+use crate::platform::{Env, Platform, ProcessEnv};
 
 /// How many cells a tag takes; narrower pictures get none.
 pub const TAG_CELLS: u32 = 4;
 
 /// The overlay app's executable name, inside `Pixlens Overlay.app`.
 const PROGRAM: &str = "pixlens-overlay";
+
+/// How many times, 25 ms apart, `start` looks for the app to say it is ready.
+const READY_POLLS: u32 = 100;
 
 /// The tag drawn in a picture's first cells for `id` (its low 24 bits).
 pub fn tag(id: u32) -> String {
@@ -63,7 +67,17 @@ pub fn record(
 /// It is started as a child, not through Launch Services, so macOS asks the
 /// terminal running Claude Code for Accessibility access, not a new app.
 pub fn start(app: Option<&Path>, cache_dir: &Path) -> Result<(bool, bool)> {
-    if !cfg!(target_os = "macos") {
+    start_on(Platform::CURRENT, app, cache_dir, &ProcessEnv)
+}
+
+/// `start` for a given platform and environment.
+pub fn start_on(
+    platform: Platform,
+    app: Option<&Path>,
+    cache_dir: &Path,
+    env: &dyn Env,
+) -> Result<(bool, bool)> {
+    if platform != Platform::MacOs {
         bail!("the overlay is for macOS only");
     }
     if is_running() {
@@ -75,7 +89,7 @@ pub fn start(app: Option<&Path>, cache_dir: &Path) -> Result<(bool, bool)> {
         let _ = Command::new("pkill").args(["-x", PROGRAM]).status();
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
-    let program = find(app).context("Pixlens Overlay.app not found")?;
+    let program = find(platform, app, env).context("Pixlens Overlay.app not found")?;
     let mut command = Command::new(program);
     command
         .stdin(Stdio::null())
@@ -84,8 +98,9 @@ pub fn start(app: Option<&Path>, cache_dir: &Path) -> Result<(bool, bool)> {
     #[cfg(unix)]
     std::os::unix::process::CommandExt::process_group(&mut command, 0);
     command.spawn().context("cannot start the overlay app")?;
-    // It says it is ready within a few frames of starting.
-    for _ in 0..20 {
+    // It says it is ready within a few frames of starting; a first start,
+    // which macOS checks before running, can take a second or two.
+    for _ in 0..READY_POLLS {
         if is_ready(cache_dir) {
             return Ok((true, true));
         }
@@ -98,7 +113,18 @@ pub fn start(app: Option<&Path>, cache_dir: &Path) -> Result<(bool, bool)> {
 /// Preview, Quick Look, copy, show in Finder. False when the app is not
 /// installed, so the caller can fall back.
 pub fn menu(app: Option<&Path>, viewable: &Path, original: &Path) -> Result<bool> {
-    let Some(program) = find(app) else {
+    menu_on(Platform::CURRENT, app, viewable, original, &ProcessEnv)
+}
+
+/// `menu` for a given platform and environment.
+pub fn menu_on(
+    platform: Platform,
+    app: Option<&Path>,
+    viewable: &Path,
+    original: &Path,
+    env: &dyn Env,
+) -> Result<bool> {
+    let Some(program) = find(platform, app, env) else {
         return Ok(false);
     };
     let mut command = Command::new(program);
@@ -139,14 +165,14 @@ fn is_running() -> bool {
 }
 
 /// The app's executable, from `app` (the `.app` the Claude Code plugin ships,
-/// or the executable itself), else `PIXLENS_OVERLAY`.
-fn find(app: Option<&Path>) -> Option<PathBuf> {
-    if !cfg!(target_os = "macos") {
+/// or the executable itself), else `PIXLENS_OVERLAY`; none off macOS.
+fn find(platform: Platform, app: Option<&Path>, env: &dyn Env) -> Option<PathBuf> {
+    if platform != Platform::MacOs {
         return None;
     }
     let given = app
         .map(Path::to_path_buf)
-        .or_else(|| std::env::var_os("PIXLENS_OVERLAY").map(PathBuf::from))?;
+        .or_else(|| env.var_os("PIXLENS_OVERLAY").map(PathBuf::from))?;
     let program = if given.extension().is_some_and(|ext| ext == "app") {
         given.join("Contents/MacOS").join(PROGRAM)
     } else {
@@ -163,6 +189,79 @@ mod tests {
     fn a_tag_is_a_start_cell_and_three_braille_bytes() {
         assert_eq!(tag(0x0a0b0c), "\u{28FF}\u{280A}\u{280B}\u{280C}");
         assert_eq!(tag(0xff_0a0b0c).chars().count(), TAG_CELLS as usize);
+    }
+
+    #[test]
+    fn find_takes_an_app_bundle_or_its_executable_on_macos_only() {
+        let dir = std::env::temp_dir().join(format!("pixlens-find-{}", std::process::id()));
+        let inside = dir.join("Pixlens Overlay.app/Contents/MacOS");
+        fs::create_dir_all(&inside).unwrap();
+        fs::write(inside.join(PROGRAM), "").unwrap();
+        let app = dir.join("Pixlens Overlay.app");
+        let program = inside.join(PROGRAM);
+
+        assert_eq!(
+            find(Platform::MacOs, Some(&app), &[]),
+            Some(program.clone())
+        );
+        assert_eq!(
+            find(Platform::MacOs, Some(&program), &[]),
+            Some(program.clone())
+        );
+        let by_env = [("PIXLENS_OVERLAY", program.to_str().unwrap())];
+        assert_eq!(find(Platform::MacOs, None, &by_env), Some(program.clone()));
+        assert_eq!(find(Platform::MacOs, None, &[]), None);
+        assert_eq!(
+            find(Platform::MacOs, Some(&dir.join("missing.app")), &[]),
+            None
+        );
+        assert_eq!(find(Platform::Linux, Some(&app), &[]), None);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn off_macos_there_is_no_overlay() {
+        let dir = Path::new("/nonexistent");
+        let error = start_on(Platform::Windows, None, dir, &[]).unwrap_err();
+        assert!(error.to_string().contains("macOS only"));
+        let shown = menu_on(Platform::Linux, None, dir, dir, &[]).unwrap();
+        assert!(!shown);
+    }
+
+    #[test]
+    fn record_reports_where_it_could_not_write() {
+        let dir = std::env::temp_dir().join(format!("pixlens-record-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let cell_box = CellBox {
+            columns: 4,
+            rows: 1,
+        };
+        let file = Path::new("/x/a.png");
+
+        // The cache folder is a file.
+        let blocked = dir.join("file");
+        fs::write(&blocked, "").unwrap();
+        let error = record(1, file, file, cell_box, &blocked).unwrap_err();
+        assert!(format!("{error:#}").contains("cannot create"));
+
+        // The entry's name is taken by a folder.
+        fs::create_dir_all(dir.join("taken/overlay/000002.json/inside")).unwrap();
+        let error = record(2, file, file, cell_box, &dir.join("taken")).unwrap_err();
+        assert!(format!("{error:#}").contains("cannot write"));
+
+        // The overlay folder can't be written to.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let locked = dir.join("locked/overlay");
+            fs::create_dir_all(&locked).unwrap();
+            fs::set_permissions(&locked, fs::Permissions::from_mode(0o555)).unwrap();
+            let error = record(3, file, file, cell_box, &dir.join("locked")).unwrap_err();
+            assert!(format!("{error:#}").contains("cannot write"));
+            fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+
+        fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]
