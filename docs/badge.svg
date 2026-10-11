@@ -19,6 +19,9 @@
       <stop offset="0" stop-color="#fff" stop-opacity=".14"/>
       <stop offset="1" stop-opacity=".18"/>
     </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.2"/>
+    </filter>
     <clipPath id="round">
       <rect width="116" height="20" rx="3"/>
     </clipPath>
@@ -44,7 +47,7 @@
   </g>
   <!-- a pixel kaiju riding a two-stage booster up at 30 degrees: the
        upright drawing tipped 60 degrees to the right about its middle -->
-  <g shape-rendering="crispEdges" transform="rotate(60 17 10)">
+  <g shape-rendering="crispEdges" transform="translate(-1 4) rotate(60 17 10)">
     <!-- engine plume -->
     <rect x="17" y="19" width="2" height="2" fill="#ff5f3c"/>
     <rect x="16" y="18" width="4" height="1" fill="#ff9a3c"/>
@@ -65,29 +68,44 @@
     <rect x="19" y="2" width="1" height="3" fill="#c3c7da"/>
     <rect x="17" y="0" width="2" height="1" fill="#f2f3f8"/>
     <rect x="16" y="1" width="4" height="1" fill="#e2e4ee"/>
-    <!-- the kaiju clinging on, back to us, head turned up -->
-    <rect x="10" y="7" width="6" height="7" fill="#3a3d45"/>
-    <rect x="11" y="9" width="3" height="4" fill="#5a5e68"/>
-    <rect x="11" y="3" width="5" height="4" fill="#3a3d45"/>
-    <rect x="12" y="2" width="3" height="1" fill="#3a3d45"/>
-    <rect x="14" y="4" width="1" height="1" fill="#ffcf40"/>
-    <rect x="15" y="2" width="1" height="2" fill="#ff5e3a"/>
-    <rect x="15" y="9" width="1" height="1" fill="#0e0f14"/>
-    <!-- arms hugging the rocket -->
-    <rect x="15" y="8" width="2" height="1" fill="#3a3d45"/>
-    <rect x="15" y="11" width="2" height="1" fill="#3a3d45"/>
-    <!-- glowing dorsal plates down its back -->
-    <rect x="9" y="4" width="2" height="1" fill="#5fd3ff"/>
-    <rect x="8" y="6" width="2" height="1" fill="#c9f4ff"/>
-    <rect x="9" y="7" width="1" height="1" fill="#5fd3ff"/>
-    <rect x="8" y="9" width="2" height="1" fill="#c9f4ff"/>
-    <rect x="9" y="10" width="1" height="1" fill="#5fd3ff"/>
+    <!-- atomic breath: a glow, then the beam, from the open jaws ahead -->
+    <g filter="url(#glow)">
+      <rect x="12" y="-8" width="5" height="9" fill="#3fb6ff" opacity=".9"/>
+      <rect x="6" y="2" width="5" height="11" fill="#3fb6ff" opacity=".6"/>
+    </g>
+    <rect x="12" y="-8" width="1" height="9" fill="#5fd3ff"/>
+    <rect x="16" y="-8" width="1" height="9" fill="#5fd3ff"/>
+    <rect x="13" y="-8" width="3" height="9" fill="#effcff"/>
+    <rect x="13" y="-10" width="3" height="2" fill="#5fd3ff" opacity=".7"/>
+    <!-- the kaiju riding the booster, jaws open, head thrown forward -->
+    <rect x="10" y="7" width="6" height="7" fill="#26282f"/>
+    <rect x="11" y="8" width="3" height="5" fill="#44485a"/>
+    <rect x="10" y="3" width="6" height="4" fill="#26282f"/>
+    <rect x="11" y="2" width="1" height="1" fill="#26282f"/>
+    <rect x="15" y="1" width="2" height="2" fill="#26282f"/>
+    <rect x="12" y="1" width="1" height="2" fill="#26282f"/>
+    <rect x="13" y="1" width="2" height="2" fill="#bff6ff"/>
+    <rect x="11" y="4" width="1" height="1" fill="#7ef0ff"/>
+    <rect x="13" y="3" width="1" height="1" fill="#e9e4d6"/>
+    <rect x="15" y="3" width="1" height="1" fill="#e9e4d6"/>
+    <!-- arms gripping the hull -->
+    <rect x="15" y="8" width="2" height="1" fill="#26282f"/>
+    <rect x="15" y="11" width="2" height="1" fill="#26282f"/>
+    <rect x="16" y="9" width="1" height="1" fill="#0e0f14"/>
+    <!-- dorsal plates blazing down its back -->
+    <rect x="8" y="3" width="2" height="2" fill="#5fd3ff"/>
+    <rect x="7" y="4" width="1" height="1" fill="#c9f4ff"/>
+    <rect x="7" y="6" width="3" height="2" fill="#5fd3ff"/>
+    <rect x="6" y="7" width="1" height="1" fill="#ffffff"/>
+    <rect x="8" y="9" width="2" height="2" fill="#5fd3ff"/>
+    <rect x="7" y="10" width="1" height="1" fill="#c9f4ff"/>
     <rect x="8" y="12" width="2" height="1" fill="#5fd3ff"/>
-    <!-- feet on the fin, tail swinging down -->
-    <rect x="12" y="14" width="2" height="1" fill="#0e0f14"/>
-    <rect x="9" y="14" width="2" height="2" fill="#3a3d45"/>
-    <rect x="7" y="16" width="3" height="1" fill="#3a3d45"/>
-    <rect x="5" y="17" width="2" height="1" fill="#3a3d45"/>
+    <!-- legs braced on the fins, tail whipping in the slipstream -->
+    <rect x="12" y="14" width="3" height="1" fill="#0e0f14"/>
+    <rect x="9" y="13" width="2" height="2" fill="#26282f"/>
+    <rect x="7" y="15" width="3" height="1" fill="#26282f"/>
+    <rect x="5" y="16" width="2" height="1" fill="#26282f"/>
+    <rect x="3" y="17" width="2" height="1" fill="#26282f"/>
     <!-- speed lines streaming down -->
     <rect x="23" y="4" width="1" height="4" fill="#9fe6ff" opacity=".6"/>
     <rect x="25" y="9" width="1" height="5" fill="#9fe6ff" opacity=".5"/>
