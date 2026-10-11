@@ -62,9 +62,9 @@ Formats: PNG, JPEG, GIF (first frame), WebP, BMP, TIFF, ICO, QOI and SVG.
 > [!IMPORTANT]
 > pixlens needs **Claude Code 2.1.295 or newer**: the plugin uses its function-hook API. `pixlens setup` also needs `claude` on your `PATH`; check both with `claude --version`.
 
-```sh
-cargo install pixlens   # the CLI, from crates.io
-pixlens setup           # the plugin, into Claude Code
+```console
+$ cargo install pixlens   # the CLI, from crates.io
+$ pixlens setup           # the plugin, into Claude Code
 ```
 
 > [!TIP]
@@ -237,8 +237,9 @@ Main Rust crates:
 
 Pixlens Overlay isn't drawing. Check with:
 
-```sh
-pixlens overlay --app "<plugin folder>/overlay/Pixlens Overlay.app"
+```console
+$ pixlens overlay --app "<plugin folder>/overlay/Pixlens Overlay.app"
+{"overlay":"running","ready":true}
 ```
 
 You want `"ready":true`. `false` means your terminal (Terminal, or herdr) has no Accessibility access yet.
@@ -264,12 +265,12 @@ No. Previews are for you. `image_preview` tells Claude only the file names and s
 
 Issues and pull requests are welcome. To work on it:
 
-```sh
-cargo test                      # the CLI
-claude plugin validate .        # marketplace, manifest and hooks module
-claude plugin test plugin       # the plugin's tests
-plugin/overlay/build.sh         # rebuild Pixlens Overlay after changing its Swift source
-claude --plugin-dir ./plugin    # a session with your working copy loaded
+```console
+$ cargo test                      # the CLI
+$ claude plugin validate .        # marketplace, manifest and hooks module
+$ claude plugin test plugin       # the plugin's tests
+$ plugin/overlay/build.sh         # rebuild Pixlens Overlay after changing its Swift source
+$ claude --plugin-dir ./plugin    # a session with your working copy loaded
 ```
 
 `claude --plugin-dir` reloads the plugin whenever you save a file in it. Try it on the examples:
