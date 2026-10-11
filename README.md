@@ -1,6 +1,6 @@
 <a id="top"></a>
 
-# pixlens [![CI](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml/badge.svg)](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml) [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license) [![Claude Code 2.1.295+](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
+# pixlens [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license) [![Claude Code 2.1.295+](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
 
 > See your images inside Claude Code, right in the terminal.
 > <img src="docs/icon.png" align="right" width="96" alt="pixlens icon: a pixel magnifier over a picture"/>
@@ -16,8 +16,7 @@ image work and a Claude Code plugin draws the result.
 [Usage](#usage) ·
 [Terminals](#terminal-support) ·
 [How it works](#how-it-works) ·
-[FAQ](#faq) ·
-[อ่านภาษาไทย](README.th.md)
+[FAQ](#faq)
 
 <p align="center">
   <img src="docs/demo-pixlens.gif" alt="Typing /pixlens with two image files in Claude Code; a pixel-art kaiju and a green hill appear as sharp pictures in the transcript" width="760">
