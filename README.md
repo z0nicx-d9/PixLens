@@ -1,9 +1,10 @@
 <a id="top"></a>
 
-# pixlens [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license) [![Claude Code 2.1.295+](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
+# Pixlens 
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license) [![Claude Code 2.1.295+](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
 
 > See your images inside Claude Code, right in the terminal.
-> <img src="docs/icon.png" align="right" width="96" alt="pixlens icon: a pixel magnifier over a picture"/>
+> <img src="docs/icon.png" align="right" width="96" alt="pixlens icon: a pixel terminal window showing a picture"/>
 
 Pasted pictures, charts your scripts draw and image files Claude reads show up
 in the transcript, sharp even in Apple's Terminal. A small Rust CLI does the
@@ -16,11 +17,16 @@ image work and a Claude Code plugin draws the result.
 [Usage](#usage) ·
 [Terminals](#terminal-support) ·
 [How it works](#how-it-works) ·
+[Built with](#built-with) ·
 [FAQ](#faq)
 
 <p align="center">
-  <img src="docs/demo-pixlens.gif" alt="Typing /pixlens with two image files in Claude Code; a pixel-art kaiju and a green hill appear as sharp pictures in the transcript" width="760">
+  <img src="docs/demo-click.gif" alt="Hovering lights each picture with a ring; clicking a picture's name opens a menu with Open in Preview, Quick Look, Copy Image and Show in Finder" width="760">
+  <br><sub>Hover to light a picture up, click its name for the menu.</sub>
 </p>
+
+<p align="right"><a href="#top">back to top ↑</a></p>
+
 
 ## Prerequisites
 
@@ -41,13 +47,6 @@ image work and a Claude Code plugin draws the result.
 - **Rust core.** Decoding, EXIF rotation, SVG rendering and resizing happen in a small, fast CLI. It also works on its own: `pixlens show photo.jpg` in any terminal.
 
 Formats: PNG, JPEG, GIF (first frame), WebP, BMP, TIFF, ICO, QOI and SVG.
-
-<p align="center">
-  <img src="docs/demo-click.gif" alt="Hovering lights each picture with a ring; clicking a picture's name opens a menu with Open in Preview, Quick Look, Copy Image and Show in Finder" width="760">
-  <br><sub>Hover to light a picture up, click its name for the menu.</sub>
-</p>
-
-<p align="right"><a href="#top">back to top ↑</a></p>
 
 ## Install
 
@@ -184,6 +183,30 @@ Resized PNGs live in the platform cache folder (`PIXLENS_CACHE_DIR` overrides it
 
 <p align="right"><a href="#top">back to top ↑</a></p>
 
+## Built with
+
+| Part | Language | Developed with |
+| --- | --- | --- |
+| CLI (`crates/pixlens`) | Rust, edition 2024 | rustc 1.96.1 (minimum 1.88) |
+| Claude Code plugin (`plugin/`) | TypeScript (TSX) | Claude Code 2.1.296 (minimum 2.1.295), TypeScript 7.0.2 |
+| Pixlens Overlay (`plugin/overlay/`) | Swift, AppKit | Swift 6.3.3, builds for macOS 12 and later (Apple silicon and Intel) |
+| Example chart (`examples/chart.py`) | Python | Python 3.14.6, matplotlib 3.11.1 |
+
+Developed and tested on macOS 26.6.2, in Apple's Terminal, herdr and Ghostty.
+CI also builds and tests the CLI on Linux and Windows.
+
+Main Rust crates:
+
+| Crate | Version | Used for |
+| --- | --- | --- |
+| [`image`](https://crates.io/crates/image) | 0.25 | Decoding PNG, JPEG, GIF, WebP, BMP, TIFF, ICO and QOI, resizing |
+| [`resvg`](https://crates.io/crates/resvg) | 0.48 | Rendering SVG |
+| [`clap`](https://crates.io/crates/clap) | 4.6 | Command-line arguments |
+| [`serde_json`](https://crates.io/crates/serde_json) | 1.0 | The JSON the plugin reads |
+| [`terminal_size`](https://crates.io/crates/terminal_size) | 0.4 | Fitting `pixlens show` to the window |
+
+<p align="right"><a href="#top">back to top ↑</a></p>
+
 ## FAQ
 
 <details>
@@ -202,12 +225,6 @@ You want `"ready":true`. `false` means your terminal (Terminal, or herdr) has no
 <summary><b>Why is there a background app at all? Isn't this a plugin?</b></summary>
 
 A Claude Code plugin can only draw characters in Apple's Terminal. Showing real pixels there means putting a window on screen, which only an app can do. It ships inside the plugin and the plugin starts it, so there is nothing extra to install. On Ghostty or kitty it isn't used.
-</details>
-
-<details>
-<summary><b>cmd+v doesn't paste my screenshot.</b></summary>
-
-For image data on the clipboard (a screenshot), use **ctrl+v**: that is Claude Code's own image paste. cmd+v belongs to the terminal app, which only passes text, or a file's path when you copied the file in Finder.
 </details>
 
 <details>
