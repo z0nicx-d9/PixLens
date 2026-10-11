@@ -278,3 +278,93 @@ fn setup_explains_why_claude_could_not_run() {
     assert_eq!(blocked.code, 1);
     assert!(blocked.err.contains("cannot run"));
 }
+
+/// A terminal that refuses every write.
+struct Broken;
+
+impl std::io::Write for Broken {
+    fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+        Err(std::io::Error::other("the terminal went away"))
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Err(std::io::Error::other("the terminal went away"))
+    }
+}
+
+#[test]
+fn show_reports_a_terminal_it_cannot_write_to() {
+    let scratch = Scratch::new("run-broken");
+    let file = scratch.png("a.png", 4, 4);
+    let (mut out, mut err) = (Broken, Vec::new());
+    let mut io = Io {
+        out: &mut out,
+        err: &mut err,
+        terminal: None,
+        platform: Platform::MacOs,
+        env: &[],
+    };
+    let args = ["pixlens", "show", file.to_str().unwrap(), "-p", "blocks"];
+    assert_eq!(cli::run(args.iter().map(Into::into).collect(), &mut io), 1);
+    assert!(String::from_utf8_lossy(&err).contains("the terminal went away"));
+}
+
+/// Every command that writes to the cache fails cleanly when it can't.
+#[test]
+fn commands_report_a_cache_they_cannot_write() {
+    let scratch = Scratch::new("run-cache-blocked");
+    let png = scratch.png("a.png", 64, 64);
+    let svg = scratch.path("b.svg");
+    std::fs::write(
+        &svg,
+        r#"<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>"#,
+    )
+    .unwrap();
+    let jpeg = scratch.path("c.jpg");
+    image::DynamicImage::ImageRgba8(common::gradient(4, 4))
+        .into_rgb8()
+        .save(&jpeg)
+        .unwrap();
+    let blocked = scratch.path("not-a-folder");
+    std::fs::write(&blocked, "").unwrap();
+    let cache = blocked.join("cache");
+    let (png, svg, jpeg, cache) = (
+        png.to_str().unwrap(),
+        svg.to_str().unwrap(),
+        jpeg.to_str().unwrap(),
+        cache.to_str().unwrap(),
+    );
+
+    for args in [
+        vec!["render", png, "--png", "--cache-dir", cache],
+        vec!["render", svg, "--overlay", "--cache-dir", cache],
+        vec!["render", png, "--overlay", "--cache-dir", cache],
+        vec!["copy", jpeg, "--cache-dir", cache],
+        vec!["open", svg, "--cache-dir", cache],
+        vec!["menu", svg, "--cache-dir", cache],
+    ] {
+        let out = run(&args, &[]);
+        assert_eq!(out.code, 1, "{args:?}");
+        assert!(
+            out.json()["error"]
+                .as_str()
+                .unwrap()
+                .contains("cannot create"),
+            "{args:?}: {}",
+            out.out
+        );
+    }
+}
+
+#[test]
+fn commands_report_a_missing_file() {
+    for command in ["copy", "open", "menu"] {
+        let out = run(&[command, "/nonexistent/a.png", "--cache-dir", "/tmp"], &[]);
+        assert_eq!(out.code, 1);
+        assert!(
+            out.json()["error"]
+                .as_str()
+                .unwrap()
+                .contains("cannot open")
+        );
+    }
+}

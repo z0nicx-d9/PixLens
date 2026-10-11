@@ -73,6 +73,21 @@ fn open_uses_preview_and_converts_svg_first() {
 }
 
 #[test]
+fn a_viewer_that_fails_is_reported_by_open_and_by_menu() {
+    let scratch = Scratch::new("desk-open-fail");
+    scratch.tool("open", "exit 1");
+    let file = scratch.png("a.png", 4, 4);
+    for command in ["open", "menu"] {
+        let out = run(&scratch, &[command, arg(&file)], &[]);
+        assert!(!out.status.success());
+        assert!(
+            json(&out)["error"].as_str().unwrap().contains("failed"),
+            "{command}"
+        );
+    }
+}
+
+#[test]
 fn menu_starts_the_overlay_app_or_falls_back_to_opening() {
     let scratch = Scratch::new("desk-menu");
     scratch.tool("open", "exit 0");
