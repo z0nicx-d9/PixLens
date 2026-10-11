@@ -1,19 +1,16 @@
 <a id="top"></a>
 
-<div align="center">
+# pixlens [![CI](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml/badge.svg)](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml) [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license) [![Claude Code 2.1.295+](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
 
-# pixlens
+> See your images inside Claude Code, right in the terminal.
+> <img src="docs/icon.png" align="right" width="96" alt="pixlens icon: a pixel magnifier over a picture"/>
 
-**See your images inside [Claude Code](https://claude.com/claude-code).**<br>
-Pasted pictures, charts your scripts draw, files Claude reads: right in the terminal, sharp.
+Pasted pictures, charts your scripts draw and image files Claude reads show up
+in the transcript, sharp even in Apple's Terminal. A small Rust CLI does the
+image work and a Claude Code plugin draws the result.
 
-[![CI](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml/badge.svg)](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml)
-[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
-[![Rust](https://img.shields.io/badge/rust-2024%20edition-orange.svg)](crates/pixlens)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
-
-<img src="docs/demo-pixlens.gif" alt="Typing /pixlens with two image files in Claude Code; a pixel-art kaiju and a green hill appear as sharp pictures in the transcript" width="760">
-
+**Contents:**
+[Prerequisites](#prerequisites) ·
 [Features](#features) ·
 [Install](#install) ·
 [Usage](#usage) ·
@@ -22,18 +19,27 @@ Pasted pictures, charts your scripts draw, files Claude reads: right in the term
 [FAQ](#faq) ·
 [อ่านภาษาไทย](README.th.md)
 
-</div>
+<p align="center">
+  <img src="docs/demo-pixlens.gif" alt="Typing /pixlens with two image files in Claude Code; a pixel-art kaiju and a green hill appear as sharp pictures in the transcript" width="760">
+</p>
 
----
+## Prerequisites
+
+- **Claude Code 2.1.295 or newer**, the first version with the function-hook plugin API. Check with `claude --version`.
+- **Rust 1.88 or newer** to build the CLI with `cargo install`. Not needed if you download a prebuilt binary.
+- **A terminal with color.** For sharp pictures:
+  - Ghostty or kitty work as they are.
+  - On macOS, Apple's Terminal (or herdr inside it) needs **Accessibility** access for that terminal, used by Pixlens Overlay.
+- **Optional:** Python 3 with matplotlib, only to run `examples/chart.py`.
 
 ## Features
 
-- 🖼️ **Paste thumbnails.** Paste an image and a thumbnail shows above the prompt, labelled `#1`, `#2`… instead of a bare `[Image #1]` tag. They go away when you send.
-- ⚡ **Automatic previews.** When Claude reads an image, writes one, or runs a script that makes one (`python plot.py` → `chart.png`), the picture appears right under that step.
-- 🔍 **Sharp, even in Apple's Terminal.** Real pixels in Ghostty and kitty; in Terminal.app and herdr the bundled [Pixlens Overlay](#pixlens-overlay-sharp-pictures-in-apples-terminal) lays the real picture over the preview.
-- 🖱️ **Click to open.** Hover a picture or its name and it lights up. Click the picture to open it in Preview; click the name for a menu: Open in Preview, Quick Look, Copy Image, Show in Finder.
-- 💬 **`/pixlens` command and `image_preview` tool.** Look at any image yourself, open or copy one, or let Claude show you a picture without reading it into its context.
-- 🦀 **Rust core.** Decoding, EXIF rotation, SVG rendering and resizing happen in a small, fast CLI. It also works on its own: `pixlens show photo.jpg` in any terminal.
+- **Paste thumbnails.** Paste an image and a thumbnail shows above the prompt, labelled `#1`, `#2`… instead of a bare `[Image #1]` tag. They go away when you send.
+- **Automatic previews.** When Claude reads an image, writes one, or runs a script that makes one (`python plot.py` → `chart.png`), the picture appears right under that step.
+- **Sharp, even in Apple's Terminal.** Real pixels in Ghostty and kitty; in Terminal.app and herdr the bundled [Pixlens Overlay](#pixlens-overlay-sharp-pictures-in-apples-terminal) lays the real picture over the preview.
+- **Click to open.** Hover a picture or its name and it lights up. Click the picture to open it in Preview; click the name for a menu: Open in Preview, Quick Look, Copy Image, Show in Finder.
+- **`/pixlens` command and `image_preview` tool.** Look at any image yourself, open or copy one, or let Claude show you a picture without reading it into its context.
+- **Rust core.** Decoding, EXIF rotation, SVG rendering and resizing happen in a small, fast CLI. It also works on its own: `pixlens show photo.jpg` in any terminal.
 
 Formats: PNG, JPEG, GIF (first frame), WebP, BMP, TIFF, ICO, QOI and SVG.
 
@@ -108,9 +114,9 @@ pixlens open photo.jpg                              # Preview on macOS, the defa
 
 | Terminal | Inside Claude Code | `pixlens show` |
 | --- | --- | --- |
-| Ghostty, kitty | ✅ real pixels | ✅ real pixels |
-| Apple's Terminal, and herdr inside it (macOS) | ✅ real pixels with Pixlens Overlay | colored blocks |
-| iTerm2, WezTerm | colored blocks | ✅ real pixels |
+| Ghostty, kitty | real pixels | real pixels |
+| Apple's Terminal, and herdr inside it (macOS) | real pixels, with Pixlens Overlay | colored blocks |
+| iTerm2, WezTerm | colored blocks | real pixels |
 | anything else with color, tmux included | colored blocks | colored blocks |
 
 Colored blocks use quadrant glyphs (`▘▝▖▗▚▞▌▐▀▄…`): four dots a cell, with pixlens picking the two colors that lose the least. Click the name under a picture to see it full size.

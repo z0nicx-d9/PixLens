@@ -1,19 +1,15 @@
 <a id="top"></a>
 
-<div align="center">
+# pixlens [![CI](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml/badge.svg)](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml) [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license) [![Claude Code 2.1.295+](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
 
-# pixlens
+> ดูรูปได้ตรงใน Claude Code ใน terminal เลย
+> <img src="docs/icon.png" align="right" width="96" alt="ไอคอน pixlens: แว่นขยายพิกเซลส่องรูปวิว"/>
 
-**ดูรูปได้ตรงใน [Claude Code](https://claude.com/claude-code)**<br>
-รูปที่วาง กราฟที่สคริปต์วาด ไฟล์ที่ Claude เปิดอ่าน แสดงใน terminal ได้เลย และคมด้วย
+รูปที่วาง กราฟที่สคริปต์วาด และไฟล์รูปที่ Claude เปิดอ่าน จะแสดงใน transcript
+และคมแม้ใน Terminal ของ Apple ตัว CLI ภาษา Rust จัดการรูป ส่วน plugin ของ Claude Code เป็นคนวาด
 
-[![CI](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml/badge.svg)](https://github.com/z0nicx-d9/pixlens/actions/workflows/ci.yml)
-[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
-[![Rust](https://img.shields.io/badge/rust-2024%20edition-orange.svg)](crates/pixlens)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
-
-<img src="docs/demo-pixlens.gif" alt="พิมพ์ /pixlens ตามด้วยไฟล์รูปสองไฟล์ใน Claude Code แล้วรูปก็อตซิลล่าพิกเซลกับรูปเนินหญ้าขึ้นมาคม ๆ" width="760">
-
+**สารบัญ:**
+[สิ่งที่ต้องมี](#prerequisites) ·
 [ความสามารถ](#features) ·
 [ติดตั้ง](#install) ·
 [วิธีใช้](#usage) ·
@@ -22,20 +18,31 @@
 [คำถามที่พบบ่อย](#faq) ·
 [English](README.md)
 
-</div>
+<p align="center">
+  <img src="docs/demo-pixlens.gif" alt="พิมพ์ /pixlens ตามด้วยไฟล์รูปสองไฟล์ใน Claude Code แล้วรูปก็อตซิลล่าพิกเซลกับรูปเนินหญ้าขึ้นมาคม ๆ" width="760">
+</p>
 
----
+<a id="prerequisites"></a>
+
+## สิ่งที่ต้องมี
+
+- **Claude Code 2.1.295 ขึ้นไป** เวอร์ชันแรกที่มีระบบ plugin แบบ function hook เช็กด้วย `claude --version`
+- **Rust 1.88 ขึ้นไป** ถ้าจะ build CLI ด้วย `cargo install` ไม่ต้องมีถ้าดาวน์โหลด binary ที่ build แล้ว
+- **terminal ที่แสดงสีได้** ถ้าอยากได้รูปคม:
+  - Ghostty หรือ kitty ใช้ได้เลย
+  - บน macOS ถ้าใช้ Terminal ของ Apple (หรือ herdr ที่รันข้างใน) ต้องเปิดสิทธิ์ **Accessibility** ให้ terminal นั้น ใช้โดย Pixlens Overlay
+- **ไม่บังคับ:** Python 3 กับ matplotlib ใช้แค่ตอนรัน `examples/chart.py`
 
 <a id="features"></a>
 
 ## ความสามารถ
 
-- 🖼️ **รูปย่อของรูปที่วาง**: วางรูปแล้วจะมีรูปย่อขึ้นเหนือช่องพิมพ์ มีเลข `#1`, `#2`… กำกับ แทนที่จะเห็นแค่ `[Image #1]` หายไปเองเมื่อส่งข้อความ
-- ⚡ **แสดงอัตโนมัติ**: เวลา Claude เปิดอ่านรูป เขียนไฟล์รูป หรือรันสคริปต์ที่สร้างรูป (`python plot.py` → `chart.png`) รูปจะขึ้นใต้ขั้นตอนนั้นเลย
-- 🔍 **คมแม้ใน Terminal ของ Apple**: Ghostty กับ kitty ได้รูปจริงระดับ pixel ส่วน Terminal.app และ herdr ใช้ [Pixlens Overlay](#overlay) ที่มากับ plugin วางรูปจริงทับช่องรูป
-- 🖱️ **คลิกเพื่อเปิด**: เอาเมาส์ชี้ที่รูปหรือชื่อจะขึ้นไฮไลต์ คลิกรูปเพื่อเปิดใน Preview คลิกชื่อเพื่อเปิดเมนู Open in Preview, Quick Look, Copy Image, Show in Finder
-- 💬 **คำสั่ง `/pixlens` และ tool `image_preview`**: เปิดดูรูปไหนก็ได้เอง เปิดหรือคัดลอกรูป หรือให้ Claude โชว์รูปให้ดูโดยไม่ต้องอ่านรูปเข้าไปเอง
-- 🦀 **แกนหลักเป็น Rust**: การอ่านไฟล์ หมุนรูปตาม EXIF วาด SVG และย่อรูป ทำใน CLI เล็ก ๆ ที่เร็ว และใช้แยกเองได้ด้วย เช่น `pixlens show photo.jpg` ใน terminal ไหนก็ได้
+- **รูปย่อของรูปที่วาง**: วางรูปแล้วจะมีรูปย่อขึ้นเหนือช่องพิมพ์ มีเลข `#1`, `#2`… กำกับ แทนที่จะเห็นแค่ `[Image #1]` หายไปเองเมื่อส่งข้อความ
+- **แสดงอัตโนมัติ**: เวลา Claude เปิดอ่านรูป เขียนไฟล์รูป หรือรันสคริปต์ที่สร้างรูป (`python plot.py` → `chart.png`) รูปจะขึ้นใต้ขั้นตอนนั้นเลย
+- **คมแม้ใน Terminal ของ Apple**: Ghostty กับ kitty ได้รูปจริงระดับ pixel ส่วน Terminal.app และ herdr ใช้ [Pixlens Overlay](#overlay) ที่มากับ plugin วางรูปจริงทับช่องรูป
+- **คลิกเพื่อเปิด**: เอาเมาส์ชี้ที่รูปหรือชื่อจะขึ้นไฮไลต์ คลิกรูปเพื่อเปิดใน Preview คลิกชื่อเพื่อเปิดเมนู Open in Preview, Quick Look, Copy Image, Show in Finder
+- **คำสั่ง `/pixlens` และ tool `image_preview`**: เปิดดูรูปไหนก็ได้เอง เปิดหรือคัดลอกรูป หรือให้ Claude โชว์รูปให้ดูโดยไม่ต้องอ่านรูปเข้าไปเอง
+- **แกนหลักเป็น Rust**: การอ่านไฟล์ หมุนรูปตาม EXIF วาด SVG และย่อรูป ทำใน CLI เล็ก ๆ ที่เร็ว และใช้แยกเองได้ด้วย เช่น `pixlens show photo.jpg` ใน terminal ไหนก็ได้
 
 รองรับ PNG, JPEG, GIF (เฟรมแรก), WebP, BMP, TIFF, ICO, QOI และ SVG
 
@@ -116,9 +123,9 @@ pixlens open photo.jpg                              # เปิดใน Preview
 
 | Terminal | ใน Claude Code | `pixlens show` |
 | --- | --- | --- |
-| Ghostty, kitty | ✅ รูปจริง | ✅ รูปจริง |
-| Terminal ของ Apple และ herdr ที่รันข้างใน (macOS) | ✅ รูปจริง ด้วย Pixlens Overlay | ตัวอักษรระบายสี |
-| iTerm2, WezTerm | ตัวอักษรระบายสี | ✅ รูปจริง |
+| Ghostty, kitty | รูปจริง | รูปจริง |
+| Terminal ของ Apple และ herdr ที่รันข้างใน (macOS) | รูปจริง ด้วย Pixlens Overlay | ตัวอักษรระบายสี |
+| iTerm2, WezTerm | ตัวอักษรระบายสี | รูปจริง |
 | terminal อื่นที่มีสี รวมถึง tmux | ตัวอักษรระบายสี | ตัวอักษรระบายสี |
 
 ตัวอักษรระบายสีใช้ตัว quadrant (`▘▝▖▗▚▞▌▐▀▄…`) ได้ช่องละ 4 จุด pixlens เลือกสองสีที่เสียรายละเอียดน้อยที่สุด ถ้าอยากดูเต็ม ๆ คลิกชื่อใต้รูป
