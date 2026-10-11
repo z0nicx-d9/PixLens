@@ -43,3 +43,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: plugin/overlay/build.sh
+
+  coverage:
+    name: Coverage (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: Swatinem/rust-cache@v2
+      # Every function is tested; LLVM's line count lists a couple of lines
+      # twice (the library is built for unit and end-to-end tests), so the
+      # line bar sits just under 100.
+      - run: cargo llvm-cov --summary-only --fail-under-functions 100 --fail-under-lines 99.5
+
