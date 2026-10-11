@@ -1,4 +1,25 @@
+# Build output
 /target
-.DS_Store
+
+# Claude Code's local settings and session files (the plugin's
+# .claude-plugin/ folders are part of the project and stay tracked)
+.claude/
+CLAUDE.local.md
 plugin/.claude-plugin/types/
 plugin/node_modules/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local data and scratch output
+/data/
+*.log
+
+# Editors and OS files
+.DS_Store
+.vscode/
+.idea/
