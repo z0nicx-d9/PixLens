@@ -1,0 +1,14 @@
+[workspace]
+members = ["crates/pixlens"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/OWNER/pixlens"
+rust-version = "1.88"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
