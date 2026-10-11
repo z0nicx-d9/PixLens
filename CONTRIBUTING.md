@@ -45,14 +45,23 @@ $ plugin/overlay/build.sh          # rebuild Pixlens Overlay after changing its 
 
 ## Tests and coverage
 
-Every Rust function is covered by a test. Check before you open a pull request:
+The Rust code has 100% region, function and line coverage, and CI keeps it
+there. Check before you open a pull request:
 
 ```console
 $ cargo llvm-cov --summary-only
 ```
 
+- The library is built twice, once for its unit tests and once for the
+  end-to-end tests, and LLVM counts a region as missed unless both builds run
+  it. Code that only `tests/` reaches therefore needs a unit test too.
+- An error that cannot happen (encoding a PNG into memory, a pixmap whose
+  sides are clamped) is an `expect` with the reason, not a `?`.
+
 - Platform-specific code takes a `Platform` and an `Env` (see
   `platform.rs`), so its Windows and Linux branches are tested on any machine.
+  Tools it starts are looked up in the `Env`'s `PATH` (`Env::command`), so
+  tests hand in stand-in scripts without touching the process environment.
 - Commands that start desktop tools (`copy`, `open`, `menu`, `overlay`) are
   tested in `tests/desktop.rs` against stand-in scripts on `PATH`, so nothing
   real opens. Those tests run on macOS.
