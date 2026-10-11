@@ -42,9 +42,9 @@
     <rect x="33" y="4" width="1" height="12" fill="#fff" opacity=".18"/>
     <rect width="116" height="20" fill="url(#shine)"/>
   </g>
-  <!-- a pixel kaiju riding a rocket up at 75 degrees: the upright drawing
-       tipped 15 degrees to the right about the rocket's middle -->
-  <g shape-rendering="crispEdges" transform="rotate(15 18 10)">
+  <!-- a pixel kaiju riding a rocket up at 45 degrees: the upright drawing
+       tipped 45 degrees to the right about the rocket's middle -->
+  <g shape-rendering="crispEdges" transform="rotate(45 16 10)">
     <!-- exhaust trail and flame below -->
     <rect x="17" y="19" width="2" height="1" fill="#ff5f3c"/>
     <rect x="16" y="17" width="4" height="2" fill="#ff9a3c"/>
