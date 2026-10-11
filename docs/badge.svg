@@ -42,21 +42,29 @@
     <rect x="33" y="4" width="1" height="12" fill="#fff" opacity=".18"/>
     <rect width="116" height="20" fill="url(#shine)"/>
   </g>
-  <!-- a pixel kaiju riding a rocket up at 45 degrees: the upright drawing
-       tipped 45 degrees to the right about the rocket's middle -->
-  <g shape-rendering="crispEdges" transform="rotate(45 16 10)">
-    <!-- exhaust trail and flame below -->
-    <rect x="17" y="19" width="2" height="1" fill="#ff5f3c"/>
-    <rect x="16" y="17" width="4" height="2" fill="#ff9a3c"/>
-    <rect x="17" y="16" width="2" height="2" fill="#ffd36b"/>
-    <!-- rocket: nose, body, window, fins -->
-    <rect x="17" y="0" width="2" height="1" fill="#ff4f6d"/>
-    <rect x="16" y="1" width="4" height="2" fill="#ff4f6d"/>
-    <rect x="16" y="3" width="4" height="13" fill="#e8e8f5"/>
-    <rect x="19" y="3" width="1" height="13" fill="#b9bdd6"/>
-    <rect x="17" y="5" width="2" height="2" fill="#3fb6ff"/>
-    <rect x="14" y="12" width="2" height="4" fill="#ff4f6d"/>
-    <rect x="20" y="12" width="2" height="4" fill="#ff4f6d"/>
+  <!-- a pixel kaiju riding a two-stage booster up at 30 degrees: the
+       upright drawing tipped 60 degrees to the right about its middle -->
+  <g shape-rendering="crispEdges" transform="rotate(60 17 10)">
+    <!-- engine plume -->
+    <rect x="17" y="19" width="2" height="2" fill="#ff5f3c"/>
+    <rect x="16" y="18" width="4" height="1" fill="#ff9a3c"/>
+    <rect x="17" y="17" width="2" height="1" fill="#ffe8a8"/>
+    <!-- engine section and folded landing legs -->
+    <rect x="16" y="16" width="4" height="1" fill="#2b2d36"/>
+    <rect x="15" y="13" width="1" height="4" fill="#1b1c22"/>
+    <rect x="20" y="13" width="1" height="4" fill="#1b1c22"/>
+    <!-- first stage: tall white body -->
+    <rect x="16" y="6" width="4" height="10" fill="#f2f3f8"/>
+    <rect x="19" y="6" width="1" height="10" fill="#c3c7da"/>
+    <!-- black interstage, grid fins sticking out -->
+    <rect x="16" y="5" width="4" height="1" fill="#1b1c22"/>
+    <rect x="15" y="6" width="1" height="1" fill="#55596a"/>
+    <rect x="20" y="6" width="1" height="1" fill="#55596a"/>
+    <!-- second stage and rounded payload fairing -->
+    <rect x="16" y="2" width="4" height="3" fill="#f2f3f8"/>
+    <rect x="19" y="2" width="1" height="3" fill="#c3c7da"/>
+    <rect x="17" y="0" width="2" height="1" fill="#f2f3f8"/>
+    <rect x="16" y="1" width="4" height="1" fill="#e2e4ee"/>
     <!-- the kaiju clinging on, back to us, head turned up -->
     <rect x="10" y="7" width="6" height="7" fill="#3a3d45"/>
     <rect x="11" y="9" width="3" height="4" fill="#5a5e68"/>
