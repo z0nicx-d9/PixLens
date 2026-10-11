@@ -52,13 +52,20 @@ Formats: PNG, JPEG, GIF (first frame), WebP, BMP, TIFF, ICO, QOI and SVG.
 
 pixlens has two parts: the **`pixlens` CLI**, which decodes and resizes images, and the **Claude Code plugin**, which draws them. You need Claude Code 2.1.295 or newer (function hooks).
 
-**1. The CLI**
+**1. The CLI**, from [crates.io](https://crates.io/crates/pixlens):
 
 ```sh
-cargo install --git https://github.com/z0nicx-d9/pixlens pixlens
+cargo install pixlens
 ```
 
-Or download a prebuilt binary from [Releases](https://github.com/z0nicx-d9/pixlens/releases) and put it on your `PATH`.
+Or one of these:
+
+- **Prebuilt binary** for macOS, Linux or Windows from [Releases](https://github.com/z0nicx-d9/pixlens/releases): unpack it and put `pixlens` on your `PATH`. No Rust needed.
+- **Latest from `main`**, before it is released:
+
+  ```sh
+  cargo install --git https://github.com/z0nicx-d9/pixlens
+  ```
 
 **2. The plugin**, typed at the Claude Code prompt:
 
@@ -183,17 +190,6 @@ Resized PNGs live in the platform cache folder (`PIXLENS_CACHE_DIR` overrides it
 
 <p align="right"><a href="#top">back to top ↑</a></p>
 
-## Built with
-
-| Part | Language | Developed with |
-| --- | --- | --- |
-| CLI (`crates/pixlens`) | Rust, edition 2024 | rustc 1.96.1 (minimum 1.88) |
-| Claude Code plugin (`plugin/`) | TypeScript (TSX) | Claude Code 2.1.296 (minimum 2.1.295), TypeScript 7.0.2 |
-| Pixlens Overlay (`plugin/overlay/`) | Swift, AppKit | Swift 6.3.3, builds for macOS 12 and later (Apple silicon and Intel) |
-| Example chart (`examples/chart.py`) | Python | Python 3.14.6, matplotlib 3.11.1 |
-
-Developed and tested on macOS 26.6.2, in Apple's Terminal, herdr and Ghostty.
-CI also builds and tests the CLI on Linux and Windows.
 
 Main Rust crates:
 
