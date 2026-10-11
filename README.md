@@ -263,7 +263,7 @@ No. Previews are for you. `image_preview` tells Claude only the file names and s
 
 ## 🤝 Contributing
 
-Issues and pull requests are welcome. To work on it:
+Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) for the layout, tests (every Rust function is covered) and commit style. To work on it:
 
 ```console
 $ cargo test                      # the CLI
