@@ -36,7 +36,10 @@ pub fn load(path: &Path) -> Result<Loaded> {
     let mut decoder = reader
         .into_decoder()
         .with_context(|| format!("cannot decode {}", path.display()))?;
-    let orientation = decoder.orientation()?;
+    // EXIF that can't be read leaves the picture as stored.
+    let orientation = decoder
+        .orientation()
+        .unwrap_or(image::metadata::Orientation::NoTransforms);
     let mut image = DynamicImage::from_decoder(decoder)
         .with_context(|| format!("cannot decode {}", path.display()))?;
     image.apply_orientation(orientation);
@@ -102,7 +105,8 @@ fn load_svg(path: &Path) -> Result<Loaded> {
     let width = (size.width() * scale).round().max(1.0) as u32;
     let height = (size.height() * scale).round().max(1.0) as u32;
 
-    let mut pixmap = tiny_skia::Pixmap::new(width, height).context("SVG has no drawable size")?;
+    // Both sides are 1 to 2048 pixels, which always fits.
+    let mut pixmap = tiny_skia::Pixmap::new(width, height).expect("a 1..=2048 px pixmap");
     resvg::render(
         &tree,
         tiny_skia::Transform::from_scale(scale, scale),
@@ -117,7 +121,8 @@ fn load_svg(path: &Path) -> Result<Loaded> {
             [color.red(), color.green(), color.blue(), color.alpha()]
         })
         .collect();
-    let image = RgbaImage::from_raw(width, height, pixels).context("SVG pixel buffer size")?;
+    let image =
+        RgbaImage::from_raw(width, height, pixels).expect("one RGBA pixel per pixmap pixel");
 
     Ok(Loaded {
         image,
@@ -210,6 +215,12 @@ mod tests {
         std::fs::write(&scrambled, &bytes).unwrap();
         assert!(format!("{:#}", load(&scrambled).err().unwrap()).contains("cannot decode"));
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_missing_file_cannot_be_opened() {
+        let error = load(Path::new("/nonexistent/a.png")).err().unwrap();
+        assert!(format!("{error:#}").contains("cannot open"));
     }
 
     #[test]

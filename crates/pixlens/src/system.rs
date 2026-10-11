@@ -2,6 +2,7 @@
 //! default image viewer. Each platform's own tool does the work, so the
 //! binary links no GUI toolkit.
 
+use std::ffi::OsStr;
 use std::path::Path;
 use std::process::Command;
 
@@ -12,7 +13,12 @@ use crate::platform::{Env, Platform, ProcessEnv};
 /// Puts the PNG at `png` on the system clipboard as an image, which
 /// Claude Code's own ctrl+v (and any app's paste) then reads.
 pub fn copy_png(png: &Path) -> Result<()> {
-    run(copy_command(Platform::CURRENT, png, &ProcessEnv)?)
+    copy_png_on(Platform::CURRENT, png, &ProcessEnv)
+}
+
+/// `copy_png` for a given platform and environment.
+pub fn copy_png_on(platform: Platform, png: &Path, env: &dyn Env) -> Result<()> {
+    run(copy_command(platform, png, env)?)
 }
 
 /// Opens `file` in Preview on macOS, or the desktop's default image viewer.
@@ -36,7 +42,7 @@ pub fn run(mut command: Command) -> Result<()> {
 pub fn copy_command(platform: Platform, png: &Path, env: &dyn Env) -> Result<Command> {
     match platform {
         Platform::MacOs => {
-            let mut command = Command::new("osascript");
+            let mut command = env.command(OsStr::new("osascript"));
             command.args([
                 "-e",
                 "on run argv",
@@ -49,7 +55,7 @@ pub fn copy_command(platform: Platform, png: &Path, env: &dyn Env) -> Result<Com
             Ok(command)
         }
         Platform::Windows => {
-            let mut command = Command::new("powershell");
+            let mut command = env.command(OsStr::new("powershell"));
             command.args([
                 "-NoProfile",
                 "-STA",
@@ -64,13 +70,13 @@ pub fn copy_command(platform: Platform, png: &Path, env: &dyn Env) -> Result<Com
         Platform::Linux
             if env.var_os("WAYLAND_DISPLAY").is_some() && env.has_program("wl-copy") =>
         {
-            let mut command = Command::new("sh");
+            let mut command = env.command(OsStr::new("sh"));
             command.args(["-c", "exec wl-copy --type image/png < \"$1\"", "pixlens"]);
             command.arg(png);
             Ok(command)
         }
         Platform::Linux if env.has_program("xclip") => {
-            let mut command = Command::new("xclip");
+            let mut command = env.command(OsStr::new("xclip"));
             command.args(["-selection", "clipboard", "-t", "image/png", "-i"]);
             command.arg(png);
             Ok(command)
@@ -167,6 +173,38 @@ mod tests {
             assert_eq!(command.get_program(), program);
             assert_eq!(args(&command).last(), Some(&OsStr::new("/tmp/x.png")));
         }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn copying_runs_the_platforms_clipboard_tool() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("pixlens-clip-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let tool = dir.join("osascript");
+        std::fs::write(&tool, "#!/bin/sh\nexit 0\n").unwrap();
+        std::fs::set_permissions(&tool, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let path = format!("{}:/bin:/usr/bin", dir.display());
+        assert!(
+            copy_png_on(
+                Platform::MacOs,
+                Path::new("/tmp/a.png"),
+                &[("PATH", path.as_str())]
+            )
+            .is_ok()
+        );
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn copying_without_a_clipboard_tool_fails_before_running_anything() {
+        let error = copy_png_on(
+            Platform::Linux,
+            Path::new("/tmp/a.png"),
+            &[("PATH", "/nowhere")],
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("no clipboard tool"));
     }
 
     #[cfg(unix)]

@@ -6,9 +6,10 @@
 //! through the Accessibility API, finds each tag, looks the id up in the
 //! overlay folder, and lays the file named there over the picture's box.
 
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 
 use anyhow::{Context, Result, bail};
 use serde_json::json;
@@ -80,17 +81,20 @@ pub fn start_on(
     if platform != Platform::MacOs {
         bail!("the overlay is for macOS only");
     }
-    if is_running() {
-        if is_ready(cache_dir) {
+    if is_running(env) {
+        if is_ready(cache_dir, env) {
             return Ok((false, true));
         }
         // Started from a terminal without Accessibility access, it can never
         // draw; started again from this one, it may.
-        let _ = Command::new("pkill").args(["-x", PROGRAM]).status();
+        let _ = env
+            .command(OsStr::new("pkill"))
+            .args(["-x", PROGRAM])
+            .status();
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
     let program = find(platform, app, env).context("Pixlens Overlay.app not found")?;
-    let mut command = Command::new(program);
+    let mut command = env.command(program.as_os_str());
     command
         .stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -101,7 +105,7 @@ pub fn start_on(
     // It says it is ready within a few frames of starting; a first start,
     // which macOS checks before running, can take a second or two.
     for _ in 0..READY_POLLS {
-        if is_ready(cache_dir) {
+        if is_ready(cache_dir, env) {
             return Ok((true, true));
         }
         std::thread::sleep(std::time::Duration::from_millis(25));
@@ -127,7 +131,7 @@ pub fn menu_on(
     let Some(program) = find(platform, app, env) else {
         return Ok(false);
     };
-    let mut command = Command::new(program);
+    let mut command = env.command(program.as_os_str());
     command
         .arg("--menu")
         .arg(viewable)
@@ -143,12 +147,12 @@ pub fn menu_on(
 
 /// Whether the overlay app wrote that it may read the screen, and that
 /// process still runs.
-fn is_ready(cache_dir: &Path) -> bool {
+fn is_ready(cache_dir: &Path, env: &dyn Env) -> bool {
     let Ok(text) = fs::read_to_string(cache_dir.join("overlay/ready")) else {
         return false;
     };
     text.trim().parse::<u32>().is_ok_and(|pid| {
-        Command::new("kill")
+        env.command(OsStr::new("kill"))
             .args(["-0", &pid.to_string()])
             .stderr(Stdio::null())
             .status()
@@ -156,8 +160,8 @@ fn is_ready(cache_dir: &Path) -> bool {
     })
 }
 
-fn is_running() -> bool {
-    Command::new("pgrep")
+fn is_running(env: &dyn Env) -> bool {
+    env.command(OsStr::new("pgrep"))
         .args(["-x", PROGRAM])
         .stdout(Stdio::null())
         .status()
@@ -216,6 +220,102 @@ mod tests {
             None
         );
         assert_eq!(find(Platform::Linux, Some(&app), &[]), None);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// A folder of stand-in tools: `pgrep` answers `is_running`, `kill` and
+    /// `pkill` succeed, and `app` runs `body`. Answers the folder and a `PATH`
+    /// with the stand-ins first.
+    #[cfg(unix)]
+    fn stand_ins(name: &str, is_running: bool, body: &str) -> (PathBuf, String) {
+        use std::os::unix::fs::PermissionsExt;
+        let dir =
+            std::env::temp_dir().join(format!("pixlens-standins-{name}-{}", std::process::id()));
+        let bin = dir.join("bin");
+        fs::create_dir_all(&bin).unwrap();
+        let pgrep = if is_running { "exit 0" } else { "exit 1" };
+        for (tool, script) in [
+            ("pgrep", pgrep),
+            ("kill", "exit 0"),
+            ("pkill", "exit 0"),
+            ("app", body),
+        ] {
+            let file = bin.join(tool);
+            fs::write(&file, format!("#!/bin/sh\n{script}\n")).unwrap();
+            fs::set_permissions(&file, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        // Run the app once: macOS checks a new executable on its first run.
+        let _ = std::process::Command::new(bin.join("app")).status();
+        let _ = fs::remove_dir_all(dir.join("cache"));
+        let path = format!("{}:/bin:/usr/bin", bin.display());
+        (dir, path)
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn start_launches_the_app_and_waits_for_it() {
+        let ready_file = "mkdir -p \"$(dirname \"$0\")/../cache/overlay\"; echo 7 > \"$(dirname \"$0\")/../cache/overlay/ready\"";
+        let (dir, path) = stand_ins("ready", false, ready_file);
+        let env = [("PATH", path.as_str())];
+        let cache = dir.join("cache");
+        let app = dir.join("bin/app");
+        assert_eq!(
+            start_on(Platform::MacOs, Some(&app), &cache, &env).unwrap(),
+            (true, true)
+        );
+        // Now running and ready: left alone.
+        let (other, running) = stand_ins("ready-running", true, "exit 0");
+        let env = [("PATH", running.as_str())];
+        assert_eq!(
+            start_on(Platform::MacOs, Some(&app), &cache, &env).unwrap(),
+            (false, true)
+        );
+        fs::remove_dir_all(dir).unwrap();
+        fs::remove_dir_all(other).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn start_restarts_an_app_that_cannot_draw_and_may_give_up_waiting() {
+        let (dir, path) = stand_ins("stuck", true, "exit 0");
+        let env = [("PATH", path.as_str())];
+        let cache = dir.join("cache");
+        fs::create_dir_all(cache.join("overlay")).unwrap();
+        fs::write(cache.join("overlay/ready"), "not a pid").unwrap();
+        let app = dir.join("bin/app");
+        assert_eq!(
+            start_on(Platform::MacOs, Some(&app), &cache, &env).unwrap(),
+            (true, false)
+        );
+
+        assert!(start_on(Platform::MacOs, Some(&dir.join("none")), &cache, &env).is_err());
+        let text = dir.join("text");
+        fs::write(&text, "").unwrap();
+        let error = start_on(Platform::MacOs, Some(&text), &cache, &env).unwrap_err();
+        assert!(error.to_string().contains("cannot start"));
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn menu_starts_the_app_with_the_picture() {
+        let (dir, path) = stand_ins("menu", false, "exit 0");
+        let env = [("PATH", path.as_str())];
+        let file = Path::new("/x/a.png");
+        assert!(
+            menu_on(
+                Platform::MacOs,
+                Some(&dir.join("bin/app")),
+                file,
+                file,
+                &env
+            )
+            .unwrap()
+        );
+        assert!(!menu_on(Platform::MacOs, None, file, file, &env).unwrap());
+        let text = dir.join("text");
+        fs::write(&text, "").unwrap();
+        assert!(menu_on(Platform::MacOs, Some(&text), file, file, &env).is_err());
         fs::remove_dir_all(dir).unwrap();
     }
 

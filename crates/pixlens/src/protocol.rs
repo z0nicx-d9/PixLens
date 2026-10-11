@@ -2,7 +2,6 @@
 
 use std::io::Cursor;
 
-use anyhow::Result;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 use image::RgbaImage;
@@ -56,21 +55,21 @@ pub fn draw(
     protocol: Protocol,
     palette: Palette,
     glyphs: Glyphs,
-) -> Result<Vec<u8>> {
-    Ok(match protocol {
+) -> Vec<u8> {
+    match protocol {
         Protocol::Blocks => blocks::ansi(
             &blocks::cells_with(image, cell_box, glyphs),
             cell_box.columns,
             palette,
         )
         .into_bytes(),
-        Protocol::Kitty => kitty(&png(image, cell_box)?, cell_box),
-        Protocol::Iterm => iterm(&png(image, cell_box)?, cell_box),
-    })
+        Protocol::Kitty => kitty(&png(image, cell_box), cell_box),
+        Protocol::Iterm => iterm(&png(image, cell_box), cell_box),
+    }
 }
 
 /// A PNG small enough to send inline: at most 24 x 48 pixels a cell.
-fn png(image: &RgbaImage, cell_box: CellBox) -> Result<Vec<u8>> {
+fn png(image: &RgbaImage, cell_box: CellBox) -> Vec<u8> {
     let (max_w, max_h) = (cell_box.columns * 24, cell_box.rows * 48);
     let image = if image.width() > max_w || image.height() > max_h {
         let scale = (max_w as f64 / image.width() as f64).min(max_h as f64 / image.height() as f64);
@@ -81,8 +80,10 @@ fn png(image: &RgbaImage, cell_box: CellBox) -> Result<Vec<u8>> {
         image.clone()
     };
     let mut out = Cursor::new(Vec::new());
-    image.write_to(&mut out, image::ImageFormat::Png)?;
-    Ok(out.into_inner())
+    image
+        .write_to(&mut out, image::ImageFormat::Png)
+        .expect("a PNG of a valid image always encodes into memory");
+    out.into_inner()
 }
 
 /// Kitty: `a=T` transmits and places at once, `c`/`r` size it in cells,
@@ -195,8 +196,7 @@ mod tests {
             Protocol::Blocks,
             Palette::TrueColor,
             Glyphs::Quad,
-        )
-        .unwrap();
+        );
         assert_eq!(String::from_utf8(blocks).unwrap().lines().count(), 2);
         let kitty = draw(
             &image,
@@ -204,8 +204,7 @@ mod tests {
             Protocol::Kitty,
             Palette::TrueColor,
             Glyphs::Quad,
-        )
-        .unwrap();
+        );
         assert!(kitty.starts_with(b"\x1b_G"));
         let iterm = draw(
             &image,
@@ -213,8 +212,7 @@ mod tests {
             Protocol::Iterm,
             Palette::TrueColor,
             Glyphs::Quad,
-        )
-        .unwrap();
+        );
         assert!(iterm.starts_with(b"\x1b]1337;"));
     }
 
@@ -232,8 +230,8 @@ mod tests {
                 .into_rgba8()
                 .dimensions()
         };
-        assert_eq!(size(png(&big, cell_box).unwrap()), (48, 10));
-        assert_eq!(size(png(&small, cell_box).unwrap()), (10, 10));
+        assert_eq!(size(png(&big, cell_box)), (48, 10));
+        assert_eq!(size(png(&small, cell_box)), (10, 10));
     }
 
     #[test]

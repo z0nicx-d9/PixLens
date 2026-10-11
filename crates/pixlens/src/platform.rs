@@ -4,8 +4,9 @@
 //! an `Env` instead of asking the build target and the process, so every
 //! branch can be exercised on any machine.
 
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::path::PathBuf;
+use std::process::Command;
 
 /// A desktop family: what opens files, holds the clipboard and keeps caches.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,6 +39,15 @@ pub trait Env {
         self.var_os(name)
             .and_then(|value| value.into_string().ok())
             .unwrap_or_default()
+    }
+
+    /// A command for `program`, looked up in this environment's `PATH`.
+    fn command(&self, program: &OsStr) -> Command {
+        let mut command = Command::new(program);
+        if let Some(path) = self.var_os("PATH") {
+            command.env("PATH", path);
+        }
+        command
     }
 
     /// Whether an executable named `name` is in one of `PATH`'s folders.
@@ -90,6 +100,18 @@ mod tests {
         assert!(![("PATH", path)].has_program("other"));
         assert!(![("HOME", "/")].has_program("tool"));
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn commands_search_this_environments_path() {
+        let with = [("PATH", "/only/here")].command(OsStr::new("tool"));
+        let path = with
+            .get_envs()
+            .find(|(key, _)| *key == "PATH")
+            .and_then(|(_, value)| value);
+        assert_eq!(path, Some(OsStr::new("/only/here")));
+        let without = [("HOME", "/")].command(OsStr::new("tool"));
+        assert_eq!(without.get_envs().count(), 0);
     }
 
     #[test]

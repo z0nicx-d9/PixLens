@@ -293,6 +293,15 @@ mod tests {
         assert_eq!(first, second);
         assert!(first.is_file());
 
+        // A picture bigger than the box (20 x 40 pixels a cell) is shrunk.
+        let big = RgbaImage::from_pixel(64, 64, image::Rgba([1, 2, 3, 255]));
+        let small = CellBox {
+            columns: 1,
+            rows: 1,
+        };
+        let shrunk = png_for(&source, &big, small, &dir.join("cache")).unwrap();
+        assert_eq!(image::image_dimensions(&shrunk).unwrap(), (20, 20));
+
         fs::remove_dir_all(&dir).unwrap();
     }
 

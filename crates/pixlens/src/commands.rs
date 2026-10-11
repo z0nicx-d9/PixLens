@@ -53,7 +53,7 @@ pub fn show(files: &[PathBuf], options: &ShowOptions, io: &mut Io) -> u8 {
         if files.len() > 1 {
             let _ = writeln!(io.out, "\x1b[2m{}\x1b[0m", file.display());
         }
-        let drawn = load(file).and_then(|loaded| {
+        let drawn = load(file).map(|loaded| {
             let cell_box = fit_cells(loaded.image.width(), loaded.image.height(), columns, rows);
             protocol::draw(
                 &loaded.image,
