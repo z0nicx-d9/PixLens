@@ -1,6 +1,6 @@
 <a id="top"></a>
 
-# Pixlens
+# Pixlens [![DEVORBIT](docs/badge.svg)](https://github.com/z0nicx-d9)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Claude Code 2.1.295+](https://img.shields.io/badge/Claude%20Code-2.1.295%2B-d97757.svg)](https://claude.com/claude-code)
 [![Rust 1.88+](https://img.shields.io/badge/Rust-1.88%2B-000000.svg?logo=rust&logoColor=white)](crates/pixlens)
@@ -9,6 +9,7 @@
 [![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey.svg)](#terminal-support)
 
 > See your images inside Claude Code, right in the terminal.
+
 > <img src="docs/icon.png" align="right" width="96" alt="pixlens icon: a pixel terminal window showing a picture"/>
 
 Pasted pictures, charts your scripts draw and image files Claude reads show up
