@@ -45,8 +45,8 @@ $ plugin/overlay/build.sh          # rebuild Pixlens Overlay after changing its 
 
 ## Tests and coverage
 
-The Rust code has 100% region, function and line coverage. Keep it there and
-check before you open a pull request:
+The Rust code has 100% region, function and line coverage, and CI keeps it
+there. Check before you open a pull request:
 
 ```console
 $ cargo llvm-cov --fail-under-regions 100 --fail-under-functions 100 --fail-under-lines 100
