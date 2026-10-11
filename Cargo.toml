@@ -8,6 +8,15 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/z0nicx-d9/pixlens"
 rust-version = "1.88"
 
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+unwrap_in_result = "warn"
+
 [profile.release]
 lto = "thin"
 codegen-units = 1
