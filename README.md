@@ -57,28 +57,16 @@ Formats: PNG, JPEG, GIF (first frame), WebP, BMP, TIFF, ICO, QOI and SVG.
 
 pixlens has two parts: the **`pixlens` CLI**, which decodes and resizes images, and the **Claude Code plugin**, which draws them. You need Claude Code 2.1.295 or newer (function hooks).
 
-**1. The CLI**, from [crates.io](https://crates.io/crates/pixlens):
-
 ```sh
-cargo install pixlens
+cargo install pixlens   # 1. the CLI, from crates.io
+pixlens setup           # 2. the plugin, into Claude Code
 ```
 
-Or one of these:
-
-- **Prebuilt binary** for macOS, Linux or Windows from [Releases](https://github.com/z0nicx-d9/pixlens/releases): unpack it and put `pixlens` on your `PATH`. No Rust needed.
-- **Latest from `main`**, before it is released:
-
-  ```sh
-  cargo install --git https://github.com/z0nicx-d9/pixlens
-  ```
-
-**2. The plugin**, typed at the Claude Code prompt:
+`pixlens setup` runs Claude Code's own plugin install for you (`--scope project` installs it for one project instead of your user). To do that step by hand, type this at the Claude Code prompt instead:
 
 ```
 /plugin install pixlens --marketplace z0nicx-d9/pixlens
 ```
-
-Answer `y` to add the marketplace, then press Enter to install it for your user.
 
 **3. On macOS with Apple's Terminal** (optional, for sharp pictures): give your terminal Accessibility access in **System Settings → Privacy & Security → Accessibility**. Add **Terminal**, or **herdr** if you run Claude Code inside herdr. See [Pixlens Overlay](#pixlens-overlay-sharp-pictures-in-apples-terminal).
 
