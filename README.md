@@ -59,12 +59,16 @@ Formats: PNG, JPEG, GIF (first frame), WebP, BMP, TIFF, ICO, QOI and SVG.
 
 ## 📦 Install
 
+> [!IMPORTANT]
+> pixlens needs **Claude Code 2.1.295 or newer**: the plugin uses its function-hook API. `pixlens setup` also needs `claude` on your `PATH`; check both with `claude --version`.
+
 ```sh
 cargo install pixlens   # the CLI, from crates.io
 pixlens setup           # the plugin, into Claude Code
 ```
 
-On macOS with Apple's Terminal, also give your terminal (Terminal, or herdr) **Accessibility** access in System Settings → Privacy & Security, for [sharp pictures](#pixlens-overlay).
+> [!TIP]
+> On macOS with Apple's Terminal, give your terminal (Terminal, or herdr) **Accessibility** access in System Settings → Privacy & Security for [sharp pictures](#pixlens-overlay). Ghostty and kitty need nothing more.
 
 <details>
 <summary>Install the plugin by hand</summary>
@@ -84,6 +88,9 @@ On macOS with Apple's Terminal, also give your terminal (Terminal, or herdr) **A
 
 Work as usual. Pictures show up on their own:
 
+> [!NOTE]
+> Previews are for you: Claude doesn't see the pictures. When Claude needs to look at an image itself, it uses `Read`.
+
 | You do | pixlens shows |
 | --- | --- |
 | Paste an image (ctrl+v, or cmd+v for a file copied in Finder) | A thumbnail above the prompt |
@@ -101,11 +108,21 @@ At the prompt:
 
 In any terminal, without Claude Code:
 
-```sh
-pixlens show examples/kaiju.png     # draw it here
-pixlens copy examples/chart.png     # to the clipboard as a PNG
-pixlens open examples/chart.png     # in Preview, or the default viewer elsewhere
-```
+| Command | What it does |
+| --- | --- |
+| `pixlens show <image>…` | Draw images in this terminal |
+| `pixlens copy <image>` | Copy to the clipboard as a PNG |
+| `pixlens open <image>` | Open in Preview, or the default viewer elsewhere |
+| `pixlens render <image>` | Print the JSON the plugin reads |
+| `pixlens setup` | Install the Claude Code plugin |
+
+> [!IMPORTANT]
+> Every command has more options, such as `--columns`, `--rows` and `--protocol` for `show`. List them with `pixlens --help` or `pixlens <command> --help`.
+
+<p align="center">
+  <img src="docs/pixlens-show.png" alt="pixlens show examples/kaiju.png in Ghostty: the pixel kaiju drawn at full resolution in the terminal" width="640">
+  <br><sub><code>pixlens show examples/kaiju.png</code> in Ghostty</sub>
+</p>
 
 <p align="right"><a href="#top">back to top ↑</a></p>
 
@@ -146,6 +163,9 @@ Apple's Terminal can't draw pixels, and a plugin can only draw characters there.
 - Pictures follow scrolling, redraws and window drags, show whenever their Terminal window is visible, and are cut where another window or a pane edge covers them.
 - Clicks pass through to the terminal. The overlay lights the picture or name under the pointer, opens a clicked picture in Preview, and shows the menu for a clicked name.
 - It runs in the background as `pixlens-overlay` (no Dock icon). Turn it off with the `overlay` setting.
+
+> [!CAUTION]
+> Accessibility access lets **every program started from that terminal** read the screen's text and send keystrokes and clicks, not only pixlens. Give it only to a terminal you trust, and take it back in System Settings → Privacy & Security → Accessibility when you stop using the overlay.
 
 <p align="right"><a href="#top">back to top ↑</a></p>
 
@@ -255,7 +275,8 @@ claude --plugin-dir ./plugin    # a session with your working copy loaded
 `claude --plugin-dir` reloads the plugin whenever you save a file in it. Try it on the examples:
 `claude --plugin-dir ./plugin "/pixlens examples/kaiju.png examples/green-hill.png"`.
 
-**Limits.** The function-hook API is early access, so a future Claude Code release may need changes here; CI pins the version last checked. Previews show in the terminal only, not in the desktop app or the VS Code extension. tmux doesn't pass graphics through.
+> [!WARNING]
+> Claude Code's function-hook API is early access, so a future Claude Code release may need changes here; CI pins the version last checked. Previews show in the terminal only, not in the desktop app or the VS Code extension, and tmux doesn't pass graphics through.
 
 <a id="license"></a>
 
