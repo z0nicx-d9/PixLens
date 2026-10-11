@@ -1,0 +1,172 @@
+use std::path::{Path, PathBuf};
+use std::process::{Command, Output};
+
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD;
+use image::{Rgba, RgbaImage};
+use serde_json::Value;
+
+#[cfg(feature = "svg")]
+const SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">
+  <rect width="200" height="100" fill="#3366ff"/>
+  <circle cx="100" cy="50" r="40" fill="#ffcc00"/>
+</svg>"##;
+
+struct Scratch(PathBuf);
+
+impl Scratch {
+    fn new(name: &str) -> Self {
+        let dir = std::env::temp_dir().join(format!("pixlens-cli-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        Scratch(dir)
+    }
+
+    fn path(&self, name: &str) -> PathBuf {
+        self.0.join(name)
+    }
+}
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+fn gradient(width: u32, height: u32) -> RgbaImage {
+    RgbaImage::from_fn(width, height, |x, y| {
+        Rgba([(x * 255 / width) as u8, (y * 255 / height) as u8, 128, 255])
+    })
+}
+
+fn pixlens(args: &[&str], cache: &Path) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_pixlens"))
+        .args(args)
+        .env("PIXLENS_CACHE_DIR", cache)
+        .output()
+        .unwrap()
+}
+
+fn json(output: &Output) -> Value {
+    serde_json::from_slice(&output.stdout).unwrap()
+}
+
+#[test]
+fn render_jpeg_answers_box_png_and_cells() {
+    let scratch = Scratch::new("jpeg");
+    let file = scratch.path("photo.jpg");
+    image::DynamicImage::ImageRgba8(gradient(1600, 900))
+        .into_rgb8()
+        .save(&file)
+        .unwrap();
+
+    let out = pixlens(
+        &[
+            "render",
+            file.to_str().unwrap(),
+            "--columns",
+            "40",
+            "--rows",
+            "20",
+            "--png",
+            "--cells",
+        ],
+        &scratch.path("cache"),
+    );
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let answer = json(&out);
+
+    assert_eq!(answer["format"], "jpeg");
+    assert_eq!(
+        (answer["width"].as_u64(), answer["height"].as_u64()),
+        (Some(1600), Some(900))
+    );
+    assert_eq!(
+        (answer["columns"].as_u64(), answer["rows"].as_u64()),
+        (Some(40), Some(12))
+    );
+
+    let png = PathBuf::from(answer["png"].as_str().unwrap());
+    assert!(png.starts_with(scratch.path("cache")));
+    assert_eq!(image::image_dimensions(&png).unwrap(), (800, 450));
+
+    let cells = STANDARD.decode(answer["cells"].as_str().unwrap()).unwrap();
+    assert_eq!(cells.len(), 40 * 12 * 12);
+}
+
+#[cfg(feature = "svg")]
+#[test]
+fn render_svg() {
+    let scratch = Scratch::new("svg");
+    let file = scratch.path("chart.svg");
+    std::fs::write(&file, SVG).unwrap();
+
+    let out = pixlens(
+        &["render", file.to_str().unwrap(), "--columns", "20"],
+        &scratch.path("cache"),
+    );
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let answer = json(&out);
+
+    assert_eq!(answer["format"], "svg");
+    assert_eq!(
+        (answer["columns"].as_u64(), answer["rows"].as_u64()),
+        (Some(20), Some(5))
+    );
+    assert!(answer.get("png").is_none() && answer.get("cells").is_none());
+}
+
+#[test]
+fn render_a_missing_file_answers_an_error() {
+    let scratch = Scratch::new("missing");
+    let out = pixlens(
+        &["render", scratch.path("nope.png").to_str().unwrap()],
+        &scratch.path("cache"),
+    );
+
+    assert!(!out.status.success());
+    assert!(json(&out)["error"].as_str().unwrap().contains("nope.png"));
+}
+
+#[test]
+fn render_text_is_not_an_image() {
+    let scratch = Scratch::new("text");
+    let file = scratch.path("notes.png");
+    std::fs::write(&file, "not a picture").unwrap();
+
+    let out = pixlens(&["render", file.to_str().unwrap()], &scratch.path("cache"));
+    assert!(!out.status.success());
+    assert!(json(&out)["error"].is_string());
+}
+
+#[test]
+fn show_blocks_draws_half_blocks() {
+    let scratch = Scratch::new("show");
+    let file = scratch.path("small.png");
+    gradient(8, 8).save(&file).unwrap();
+
+    let out = pixlens(
+        &[
+            "show",
+            file.to_str().unwrap(),
+            "--protocol",
+            "blocks",
+            "--colors",
+            "truecolor",
+            "--glyphs",
+            "half",
+        ],
+        &scratch.path("cache"),
+    );
+    assert!(out.status.success());
+    let text = String::from_utf8(out.stdout).unwrap();
+    assert_eq!(text.lines().count(), 4);
+    assert_eq!(text.matches('▀').count(), 32);
+}
