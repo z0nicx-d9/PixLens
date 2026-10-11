@@ -39,7 +39,7 @@ jobs:
             cp "target/${{ matrix.target }}/release/pixlens" "$name"/
             tar czf "$name.tar.gz" "$name"
           fi
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: |
             pixlens-*.tar.gz
