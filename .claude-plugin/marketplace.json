@@ -1,0 +1,14 @@
+{
+  "name": "pixlens",
+  "description": "pixlens: image preview for Claude Code",
+  "owner": {
+    "name": "Nattachai"
+  },
+  "plugins": [
+    {
+      "name": "pixlens",
+      "source": "./plugin",
+      "description": "Image preview inside Claude Code: see what Claude reads, draws and writes, right in the transcript"
+    }
+  ]
+}

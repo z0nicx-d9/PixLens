@@ -1,0 +1,87 @@
+{
+  "name": "pixlens",
+  "version": "0.1.0",
+  "description": "See images in Claude Code: thumbnails of what you paste and previews of what tools read or make; click one to open it in your image viewer",
+  "author": {
+    "name": "Nattachai"
+  },
+  "license": "MIT OR Apache-2.0",
+  "keywords": [
+    "image",
+    "preview",
+    "terminal",
+    "kitty"
+  ],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "binary": {
+      "type": "string",
+      "title": "pixlens CLI",
+      "description": "Path to the pixlens binary; a bare name is looked up on PATH",
+      "default": "pixlens"
+    },
+    "mode": {
+      "type": "string",
+      "title": "Drawing",
+      "description": "image: real pixels (kitty, Ghostty); blocks: colored half-blocks (any terminal); auto: pick by terminal",
+      "default": "auto",
+      "options": [
+        "auto",
+        "image",
+        "blocks"
+      ]
+    },
+    "glyphs": {
+      "type": "string",
+      "title": "Block glyphs",
+      "description": "quad: four dots a cell, the sharpest; half: two dots a cell, for fonts that draw quadrants with gaps",
+      "default": "quad",
+      "options": [
+        "quad",
+        "half"
+      ]
+    },
+    "maxColumns": {
+      "type": "number",
+      "title": "Widest preview, in columns",
+      "default": 32,
+      "description": "Previews are scaled down to fit this many terminal columns"
+    },
+    "maxRows": {
+      "type": "number",
+      "title": "Tallest preview, in rows",
+      "default": 9,
+      "description": "Previews are scaled down to fit this many terminal rows"
+    },
+    "thumbRows": {
+      "type": "number",
+      "title": "Paste thumbnail height, in rows",
+      "description": "Thumbnails above the prompt are scaled down to fit this many rows",
+      "default": 3
+    },
+    "automatic": {
+      "type": "boolean",
+      "title": "Preview images that tools read or make",
+      "default": true,
+      "description": "Draw an image under a Read, Write or Edit of an image file, and under a Bash command that writes one"
+    },
+    "pasteThumbnails": {
+      "type": "boolean",
+      "title": "Thumbnails of pasted images",
+      "description": "Show the images you paste as thumbnails above the prompt until you send it",
+      "default": true
+    },
+    "overlay": {
+      "type": "boolean",
+      "title": "Sharp pictures in Apple's Terminal",
+      "description": "On macOS, start Pixlens Overlay (shipped in this plugin) to lay the real picture over each preview. Needs Accessibility access for your terminal",
+      "default": true
+    },
+    "tool": {
+      "type": "boolean",
+      "title": "Give Claude the image_preview tool",
+      "default": true,
+      "description": "Registers image_preview, which Claude calls to show you an image without reading it itself"
+    }
+  }
+}
